@@ -54,3 +54,5 @@ WARNING: Unmatched cancel notification for request id 21
 2026.06.24 15:22:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\test\java\com\example\Metropark\MetroparkApplicationTests.java. Using fallback presentation compiler.
 2026.06.24 15:22:48 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\test\java\com\example\Metropark\MetroparkApplicationTests.java
 2026.06.24 15:22:48 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\test\java\com\example\Metropark\MetroparkApplicationTests.java. Using fallback presentation compiler.
+Jun 24, 2026 3:30:52 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
