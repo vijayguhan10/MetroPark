@@ -1,0 +1,3 @@
+VHOST: /
+QUEUE: notification.queue
+INDEX: v2

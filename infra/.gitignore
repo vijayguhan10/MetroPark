@@ -1,0 +1,5 @@
+# Ignore all container runtime data directories recursively
+**/data/
+
+# Ignore any OS specific crash dumps or loose log files inside infra
+*.log
