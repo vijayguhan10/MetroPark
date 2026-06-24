@@ -1,0 +1,3 @@
+VHOST: /
+QUEUE: notification.dlq
+INDEX: v2

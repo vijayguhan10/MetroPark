@@ -1,0 +1,67 @@
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+
+    ports:
+      # Host access (your app running on host should use localhost:29092)
+      - "29092:29092"
+
+    environment:
+      KAFKA_NODE_ID: 1
+
+      # KRaft mode (no Zookeeper)
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      # Listeners
+      # - PLAINTEXT: internal Docker network
+      # - PLAINTEXT_HOST: host-accessible
+      # - CONTROLLER: KRaft controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:29092,CONTROLLER://:9093
+
+      # What Kafka advertises to clients
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+
+      # Controller listener
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Protocol mapping
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+
+      # Internal broker communication
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # KRaft quorum
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      # Single node replication settings
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+    volumes:
+         - ./data:/var/lib/kafka
+
+    networks:
+      - kafka_network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+
+    depends_on:
+      - kafka
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+    networks:
+      - kafka_network
+
+networks:
+  kafka_network:
+    driver: bridge
