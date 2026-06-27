@@ -10,6 +10,7 @@ import com.example.Metropark.dto.UserDto;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
 @Repository
 public class UserRepository {
 
@@ -17,6 +18,13 @@ public class UserRepository {
 
     public UserRepository(DSLContext dsl) {
         this.dsl = dsl;
+    }
+
+    // --- NEW CREATE METHOD ---
+    public Mono<Integer> createUser(UserDto userDto) {
+        return Mono.from(dsl.insertInto(table("users"))
+                .columns(field("user_id"), field("email"), field("user_status"))
+                .values(userDto.userId(), userDto.email(), userDto.userStatus()));
     }
 
     public Mono<UserDto> findById(String userId) {
