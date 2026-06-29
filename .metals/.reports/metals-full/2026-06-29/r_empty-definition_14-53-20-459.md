@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/VehicleTypeController.java:_empty_/`<any>`#flatMap#onErrorResume#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/VehicleTypeController.java
+empty definition using pc, found symbol in pc: _empty_/`<any>`#flatMap#onErrorResume#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 2049
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/VehicleTypeController.java
+text:
+```scala
 package com.example.Metropark.controller;
 
 import com.example.Metropark.dto.VehicleTypeDto;
@@ -47,15 +58,12 @@ public class VehicleTypeController {
         return service.updateVehicleType(id, dto)
                 .flatMap(rowsUpdated -> {
                     if (rowsUpdated > 0) {
-                        return Mono.just(
-                                ResponseEntity.ok("Vehicle type updated successfully"));
+                        return Mono.just(ResponseEntity.ok("Vehicle type updated successfully."));
                     } else {
-                        return Mono.just(
-                                ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                        .body("Vehicle type not found"));
+                        return Mono.just(ResponseEntity.notFound().build().);
                     }
                 })
-                .onErrorResume(ex -> Mono.just(
+                .onErrorRe@@sume(ex -> Mono.just(
                         ResponseEntity.internalServerError()
                                 .body(ex.getMessage())));
     }
@@ -72,3 +80,9 @@ public class VehicleTypeController {
                 });
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/`<any>`#flatMap#onErrorResume#

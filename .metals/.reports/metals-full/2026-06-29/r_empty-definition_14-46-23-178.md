@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/VehicleTypeController.java:_empty_/VehicleTypeService#deleteVehicleType#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/VehicleTypeController.java
+empty definition using pc, found symbol in pc: _empty_/VehicleTypeService#deleteVehicleType#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 2324
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/VehicleTypeController.java
+text:
+```scala
 package com.example.Metropark.controller;
 
 import com.example.Metropark.dto.VehicleTypeDto;
@@ -39,30 +50,29 @@ public class VehicleTypeController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{id}")
-    public Mono<ResponseEntity<String>> update(
-            @PathVariable Integer id,
-            @RequestBody VehicleTypeDto dto) {
+@PutMapping("/{id}")
+public Mono<ResponseEntity<String>> update(
+        @PathVariable Integer id,
+        @RequestBody VehicleTypeDto dto) {
 
-        return service.updateVehicleType(id, dto)
-                .flatMap(rowsUpdated -> {
-                    if (rowsUpdated > 0) {
-                        return Mono.just(
-                                ResponseEntity.ok("Vehicle type updated successfully"));
-                    } else {
-                        return Mono.just(
-                                ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                        .body("Vehicle type not found"));
-                    }
-                })
-                .onErrorResume(ex -> Mono.just(
-                        ResponseEntity.internalServerError()
-                                .body(ex.getMessage())));
-    }
+    return service.updateVehicleType(id, dto)
+            .flatMap(rowsUpdated -> {
+                if (rowsUpdated > 0) {
+                    return Mono.just(ResponseEntity.ok("Vehicle type updated successfully."));
+                } else {
+                    return Mono.just(ResponseEntity.notFound().build());
+                }
+            })
+            .onErrorResume(ex ->
+                    Mono.just(
+                            ResponseEntity.internalServerError()
+                                    .body(ex.getMessage())
+                    ));
+}
 
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<String>> delete(@PathVariable Integer id) {
-        return service.deleteVehicleType(id)
+        return service.deleteVeh@@icleType(id)
                 .flatMap(rowsDeleted -> {
                     if (rowsDeleted > 0) {
                         return Mono.just(ResponseEntity.ok("Vehicle type deleted successfully."));
@@ -72,3 +82,9 @@ public class VehicleTypeController {
                 });
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/VehicleTypeService#deleteVehicleType#

@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/ReservationClassController.java:java/lang/Integer#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/ReservationClassController.java
+empty definition using pc, found symbol in pc: java/lang/Integer#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 2143
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/ReservationClassController.java
+text:
+```scala
 package com.example.Metropark.controller;
 
 import com.example.Metropark.dto.ReservationClassDto;
@@ -22,8 +33,8 @@ public class ReservationClassController {
     public Mono<ResponseEntity<String>> create(@RequestBody ReservationClassDto dto) {
         return service.createReservationClass(dto)
                 .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Reservation class created successfully."))
-                .onErrorResume(IllegalArgumentException.class,
-                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                .onErrorResume(IllegalArgumentException.class, e -> 
+                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
     @GetMapping
@@ -41,26 +52,24 @@ public class ReservationClassController {
     @PutMapping("/{id}")
     public Mono<ResponseEntity<String>> update(@PathVariable Integer id, @RequestBody ReservationClassDto dto) {
         return service.updateReservationClass(id, dto)
-                .flatMap(rows -> {
-                    if (rows > 0) {
-                        return Mono.just(ResponseEntity.ok("Reservation class updated successfully."));
-                    } else {
-                        return Mono.just(
-                                ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                        .body("Reservation class not found"));
-                    }
-                })
-                .onErrorResume(ex -> Mono.just(
-                        ResponseEntity.internalServerError()
-                                .body(ex.getMessage())));
-
+                .flatMap(rows -> rows > 0 
+                        ? Mono.just(ResponseEntity.ok("Reservation class updated successfully."))
+                        : Mono.just(ResponseEntity.notFound().build()))
+                .onErrorResume(IllegalArgumentException.class, e -> 
+                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<String>> delete(@PathVariable Integer id) {
+    public Mono<ResponseEntity<String>> delete(@PathVariable Integ@@er id) {
         return service.deleteReservationClass(id)
-                .flatMap(rows -> rows > 0
+                .flatMap(rows -> rows > 0 
                         ? Mono.just(ResponseEntity.ok("Reservation class deleted successfully."))
                         : Mono.just(ResponseEntity.notFound().build()));
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: java/lang/Integer#

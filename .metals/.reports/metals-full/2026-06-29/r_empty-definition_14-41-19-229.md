@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/ReservationClassController.java:_empty_/Mono#just#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/ReservationClassController.java
+empty definition using pc, found symbol in pc: _empty_/Mono#just#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 2187
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/ReservationClassController.java
+text:
+```scala
 package com.example.Metropark.controller;
 
 import com.example.Metropark.dto.ReservationClassDto;
@@ -45,15 +56,12 @@ public class ReservationClassController {
                     if (rows > 0) {
                         return Mono.just(ResponseEntity.ok("Reservation class updated successfully."));
                     } else {
-                        return Mono.just(
-                                ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                        .body("Reservation class not found"));
+                        return Mono.just(ResponseEntity.notFound().build());
+                        // Java can infer the type cleanly inside a standard return block!
                     }
                 })
-                .onErrorResume(ex -> Mono.just(
-                        ResponseEntity.internalServerError()
-                                .body(ex.getMessage())));
-
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just@@(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
     @DeleteMapping("/{id}")
@@ -64,3 +72,9 @@ public class ReservationClassController {
                         : Mono.just(ResponseEntity.notFound().build()));
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/Mono#just#
