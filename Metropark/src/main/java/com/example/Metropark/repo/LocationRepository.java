@@ -1,14 +1,15 @@
 package com.example.Metropark.repo;
 
-import com.example.Metropark.dto.LocationDto;
 import org.jooq.DSLContext;
 import org.jooq.Record;
-import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
+import org.springframework.stereotype.Repository;
+
+import com.example.Metropark.dto.LocationDto;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Repository
 public class LocationRepository {
@@ -22,19 +23,17 @@ public class LocationRepository {
     public Mono<Integer> create(LocationDto dto) {
         return Mono.from(dsl.insertInto(table("locations"))
                 .columns(
-                        field("location_id"), 
-                        field("type_id"), 
-                        field("location_name"), 
-                        field("city"), 
-                        field("status")
-                )
+                        field("location_id"),
+                        field("type_id"),
+                        field("location_name"),
+                        field("city"),
+                        field("status"))
                 .values(
-                        dto.locationId(), 
-                        dto.typeId(), 
-                        dto.locationName(), 
-                        dto.city(), 
-                        dto.status()
-                ));
+                        dto.locationId(),
+                        dto.typeId(),
+                        dto.locationName(),
+                        dto.city(),
+                        dto.status()));
     }
 
     public Flux<LocationDto> findAll() {
@@ -60,7 +59,6 @@ public class LocationRepository {
                 record.get("type_id", Integer.class),
                 record.get("location_name", String.class),
                 record.get("city", String.class),
-                record.get("status", String.class)
-        );
+                record.get("status", String.class));
     }
 }
