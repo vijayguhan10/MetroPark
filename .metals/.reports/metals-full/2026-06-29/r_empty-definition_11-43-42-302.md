@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/repo/LocationTypeRepository.java:_empty_/DSLContext#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/repo/LocationTypeRepository.java
+empty definition using pc, found symbol in pc: _empty_/DSLContext#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 418
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/repo/LocationTypeRepository.java
+text:
+```scala
 package com.example.Metropark.repo;
 
 import org.jooq.DSLContext;
@@ -14,7 +25,7 @@ import reactor.core.publisher.Mono;
 @Repository
 public class LocationTypeRepository {
 
-    private final DSLContext dsl;
+    private final DSLCont@@ext dsl;
 
     public LocationTypeRepository(DSLContext dsl) {
         this.dsl = dsl;
@@ -56,8 +67,14 @@ public class LocationTypeRepository {
     // MAPPER
     private LocationTypeDto mapToDto(Record record) {
         return new LocationTypeDto(
-                record.get("type_id", Long.class),
+                record.get("type_id", Integer.class),
                 record.get("type_name", String.class)
         );
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/DSLContext#

@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/LocationTypeController.java:_empty_/DeleteMapping#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/LocationTypeController.java
+empty definition using pc, found symbol in pc: _empty_/DeleteMapping#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 2251
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/LocationTypeController.java
+text:
+```scala
 package com.example.Metropark.controller;
 
 import org.springframework.http.HttpStatus;
@@ -57,7 +68,7 @@ public class LocationTypeController {
                 });
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping@@("/{id}")
     public Mono<ResponseEntity<String>> delete(@PathVariable Integer id) {
         return service.deleteLocationType(id)
                 .flatMap(rowsDeleted -> {
@@ -69,3 +80,9 @@ public class LocationTypeController {
                 });
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/DeleteMapping#

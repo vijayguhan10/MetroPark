@@ -1,8 +1,8 @@
 package com.example.Metropark.dto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record LocationTypeDto(
-    Integer typeId,
-    String typeName,
-    String address,
-    String description
-) {}
+        Long typeId,
+        @JsonProperty("typeName")
+        String typeName) {
+}

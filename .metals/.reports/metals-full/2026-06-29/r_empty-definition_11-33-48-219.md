@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/LocationTypeController.java:_empty_/LocationTypeService#createLocationType#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/LocationTypeController.java
+empty definition using pc, found symbol in pc: _empty_/LocationTypeService#createLocationType#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 1193
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/LocationTypeController.java
+text:
+```scala
 package com.example.Metropark.controller;
 
 import org.springframework.http.HttpStatus;
@@ -28,9 +39,9 @@ public class LocationTypeController {
     }
 
     @PostMapping
-    public Mono<ResponseEntity<String>> create(@RequestBody LocationTypeDto dto) {
-        return service.createLocationType(dto)
-                .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Location type created successfully."));
+    public Mono<ResponseEntity<LocationTypeDto>> create(@RequestBody LocationTypeDto dto) {
+        return service.createLoca@@tionType(dto)
+                .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Location type created successfully.", rows:rows));
     }
 
     @GetMapping
@@ -69,3 +80,9 @@ public class LocationTypeController {
                 });
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/LocationTypeService#createLocationType#
