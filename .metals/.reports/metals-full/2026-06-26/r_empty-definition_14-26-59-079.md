@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/UserController.java:java/lang/String#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/UserController.java
+empty definition using pc, found symbol in pc: java/lang/String#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 1046
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/UserController.java
+text:
+```scala
 package com.example.Metropark.controller;
 
 import org.springframework.http.HttpStatus;
@@ -28,9 +39,9 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<ResponseEntity<String>> createUser(@RequestBody UserDto userDto) {
-        userService.createUser(userDto);
-        return Mono.just(ResponseEntity.status(HttpStatus.CREATED).body("User created successfully."));
+    public Mono<ResponseEntity<String@@>> createUser(@RequestBody UserDto userDto) {
+        return userService.createUser(userDto)
+                .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("User created successfully."));
     }
 
     @GetMapping
@@ -45,3 +56,9 @@ public class UserController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: java/lang/String#

@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/UserController.java:_empty_/Mono#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/UserController.java
+empty definition using pc, found symbol in pc: _empty_/Mono#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 1390
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/UserController.java
+text:
+```scala
 package com.example.Metropark.controller;
 
 import org.springframework.http.HttpStatus;
@@ -39,9 +50,15 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<UserDto>> getUserById(@PathVariable String id) {
+    public Mono@@<ResponseEntity<UserDto>> getUserById(@PathVariable String id) {
         return userService.getUser(id)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/Mono#
