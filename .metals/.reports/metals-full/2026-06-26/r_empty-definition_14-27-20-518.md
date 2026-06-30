@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/UserService.java:_empty_/UserRepository#createUser#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/UserService.java
+empty definition using pc, found symbol in pc: _empty_/UserRepository#createUser#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 859
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/UserService.java
+text:
+```scala
 package com.example.Metropark.service;
 
 import com.example.Metropark.dto.UserDto;
@@ -25,7 +36,7 @@ public class UserService {
                 userDto.userStatus() != null ? userDto.userStatus() : "ACTIVE");
 
         // 3. Save to database
-        return userRepository.createUser(userToSave);
+        return userRepository.createUs@@er(userToSave);
     }
 
     public Mono<UserDto> getUser(String userId) {
@@ -40,3 +51,9 @@ public class UserService {
         return userRepository.updateStatus(userId, status);
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/UserRepository#createUser#

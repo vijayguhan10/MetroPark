@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/UserService.java:java/lang/Integer#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/UserService.java
+empty definition using pc, found symbol in pc: java/lang/Integer#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 464
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/UserService.java
+text:
+```scala
 package com.example.Metropark.service;
 
 import com.example.Metropark.dto.UserDto;
@@ -5,7 +16,6 @@ import com.example.Metropark.repo.UserRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import java.util.Random;
 
 @Service
 public class UserService {
@@ -16,16 +26,8 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public Mono<Integer> createUser(UserDto userDto) {
-        String generatedId = "USR-" + (new Random().nextInt(9000) + 1000);
-
-        UserDto userToSave = new UserDto(
-                generatedId,
-                userDto.email(),
-                userDto.userStatus() != null ? userDto.userStatus() : "ACTIVE");
-
-        // 3. Save to database
-        return userRepository.createUser(userToSave);
+    public Mono<@@Integer> createUser(UserDto userDto) {
+        return userRepository.createUser(userDto);
     }
 
     public Mono<UserDto> getUser(String userId) {
@@ -40,3 +42,9 @@ public class UserService {
         return userRepository.updateStatus(userId, status);
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: java/lang/Integer#
