@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/ReservationService.java:_empty_/ParkingSlotRepository#reserveSlot#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/ReservationService.java
+empty definition using pc, found symbol in pc: _empty_/ParkingSlotRepository#reserveSlot#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 1844
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/ReservationService.java
+text:
+```scala
 package com.example.Metropark.service;
 
 import com.example.Metropark.dto.ReservationDto;
@@ -54,7 +65,7 @@ public class ReservationService {
                 now,
                 now);
 
-        return parkingSlotRepository.reserveSlot(dto.slotId())
+        return parkingSlotRepository.reserve@@Slot(dto.slotId())
 
                 .flatMap(rowsUpdated -> {
 
@@ -96,3 +107,9 @@ public class ReservationService {
                 });
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/ParkingSlotRepository#reserveSlot#

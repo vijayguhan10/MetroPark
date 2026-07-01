@@ -38,7 +38,6 @@ public class ReservationController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    // Notice we require the client to send their current version to process an update!
     @PatchMapping("/{id}/status")
     public Mono<ResponseEntity<String>> updateStatus(
             @PathVariable Integer id, 
@@ -47,10 +46,8 @@ public class ReservationController {
             
         return service.updateStatus(id, status, currentVersion)
                 .map(rows -> ResponseEntity.ok("Reservation status updated."))
-                // 400 Bad Request for validation failure
                 .onErrorResume(IllegalArgumentException.class, e -> 
                         Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
-                // 409 Conflict for Optimistic Locking failure
                 .onErrorResume(IllegalStateException.class, e -> 
                         Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage())));
     }

@@ -1,3 +1,14 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/repo/ReservationRepository.java:java/time/LocalDateTime#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/repo/ReservationRepository.java
+empty definition using pc, found symbol in pc: java/time/LocalDateTime#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 290
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/repo/ReservationRepository.java
+text:
+```scala
 package com.example.Metropark.repo;
 
 import com.example.Metropark.dto.ReservationDto;
@@ -7,7 +18,7 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
+import java.time.LocalDateTim@@e;
 
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
@@ -24,15 +35,17 @@ public class ReservationRepository {
     public Mono<Integer> create(ReservationDto dto) {
         return Mono.from(dsl.insertInto(table("reservations"))
                 .columns(
-                        field("user_id"), field("slot_id"), field("queue_entry_id"),
+                        field("user_id"), field("slot_id"), field("queue_entry_id"), 
                         field("reservation_status"), field("reservation_version"),
-                        field("reserved_at"), field("expires_at"),
-                        field("created_at"), field("updated_at"))
+                        field("reserved_at"), field("expires_at"), 
+                        field("created_at"), field("updated_at")
+                )
                 .values(
-                        dto.userId(), dto.slotId(), dto.queueEntryId(),
+                        dto.userId(), dto.slotId(), dto.queueEntryId(), 
                         dto.reservationStatus(), dto.reservationVersion(),
-                        dto.reservedAt(), dto.expiresAt(),
-                        dto.createdAt(), dto.updatedAt()));
+                        dto.reservedAt(), dto.expiresAt(), 
+                        dto.createdAt(), dto.updatedAt()
+                ));
     }
 
     public Flux<ReservationDto> findAll() {
@@ -46,21 +59,13 @@ public class ReservationRepository {
     }
 
     // THE OPTIMISTIC LOCKING QUERY
-    public Mono<Integer> updateStatusWithOptimisticLock(
-            Integer reservationId,
-            String reservationStatus,
-            Integer currentVersion) {
-
-        return Mono.from(
-
-                dsl.update(table("reservations"))
-                        .set(field("reservation_status"), reservationStatus)
-                        .set(field("reservation_version"), currentVersion + 1)
-                        .set(field("updated_at"), LocalDateTime.now())
-                        .where(field("reservation_id").eq(reservationId))
-                        .and(field("reservation_version").eq(currentVersion))
-
-        );
+    public Mono<Integer> updateStatusWithOptimisticLock(Integer id, String status, Integer currentVersion) {
+        return Mono.from(dsl.update(table("reservations"))
+                .set(field("reservation_status"), status)
+                .set(field("updated_at"), LocalDateTime.now())
+                .set(field("reservation_version"), currentVersion + 1) // Increment version
+                .where(field("reservation_id").eq(id))
+                .and(field("reservation_version").eq(currentVersion))); // Lock condition
     }
 
     private ReservationDto mapToDto(Record record) {
@@ -74,6 +79,13 @@ public class ReservationRepository {
                 record.get("reserved_at", LocalDateTime.class),
                 record.get("expires_at", LocalDateTime.class),
                 record.get("created_at", LocalDateTime.class),
-                record.get("updated_at", LocalDateTime.class));
+                record.get("updated_at", LocalDateTime.class)
+        );
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: java/time/LocalDateTime#
