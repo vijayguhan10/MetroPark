@@ -9677,3 +9677,144 @@ INFO: Unsupported notification method: $/setTrace
 2026.07.06 12:55:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
 2026.07.06 12:55:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
 2026.07.06 12:57:23 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\VehicleTypeRepository.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\VehicleDto.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\VehicleRepository.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\GateDto.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\GateRepository.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\GateService.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleController.java. Using fallback presentation compiler.
+2026.07.06 14:33:36 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:36 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java
+2026.07.06 14:33:37 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+Jul 06, 2026 2:33:37 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 496
+2026.07.06 14:33:36 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+Jul 06, 2026 2:33:37 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 499
+2026.07.06 14:33:36 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:37 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+Jul 06, 2026 2:33:38 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 502
+2026.07.06 14:33:37 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:38 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:38 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:38 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:38 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:38 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:38 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:40 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:40 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:42 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:42 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:42 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:45 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:45 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:45 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:46 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java
+2026.07.06 14:33:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\ParkingSlotService.java. Using fallback presentation compiler.
+2026.07.06 14:33:48 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java
+2026.07.06 14:33:48 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:48 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:48 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:48 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:48 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:52 INFO  Created report: Optional[file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/VehicleService.java]
+2026.07.06 14:33:52 INFO  empty definition using pc, found symbol in pc: _empty_/VehicleDto#isActive# (full report at: "C:\Users\vguhankm\projects\MetroPark\.metals\.reports\metals-full\2026-07-06\r_empty-definition_14-33-52-363.md")
+2026.07.06 14:33:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:54 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:54 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:58 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:58 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:33:58 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:07 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:07 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:10 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:18 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:18 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:18 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java
+2026.07.06 14:34:18 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:18 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:18 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:18 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:19 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:22 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:22 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:24 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:24 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:31 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:31 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:32 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:32 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java
+2026.07.06 14:34:32 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:37 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:37 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:37 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:37 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.06 14:34:37 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java
+2026.07.06 14:34:37 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.06 14:34:38 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.06 14:34:38 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.06 14:34:38 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:38 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java
+2026.07.06 14:34:38 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:39 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:40 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java
+2026.07.06 14:34:40 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:43 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:43 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:43 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:43 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:48 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:48 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:49 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java
+2026.07.06 14:34:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:51 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java
+2026.07.06 14:34:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:54 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:54 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:55 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:34:58 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:35:04 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:35:04 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:35:05 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:35:05 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:35:06 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
+2026.07.06 14:35:06 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\VehicleService.java. Using fallback presentation compiler.
