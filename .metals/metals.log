@@ -9676,3 +9676,4 @@ INFO: Unsupported notification method: $/setTrace
 2026.07.06 12:55:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
 2026.07.06 12:55:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
 2026.07.06 12:55:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
+2026.07.06 12:57:23 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\VehicleTypeRepository.java. Using fallback presentation compiler.
