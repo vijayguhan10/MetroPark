@@ -9034,3 +9034,253 @@ WARNING: Unmatched cancel notification for request id 572
 2026.07.01 12:18:00 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\ParkingSlotRepository.java. Using fallback presentation compiler.
 2026.07.01 12:26:15 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\ParkingSlotRepository.java. Using fallback presentation compiler.
 2026.07.01 12:26:16 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\ParkingSlotRepository.java. Using fallback presentation compiler.
+2026.07.01 12:36:54 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java
+2026.07.01 12:36:54 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/dto/q.dto.java. Output:
+
+2026.07.01 12:36:54 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:55 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:55 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:55 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:55 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:55 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:56 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java
+2026.07.01 12:36:56 INFO  Created report: Optional[file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/dto/q.dto.java]
+2026.07.01 12:36:56 INFO  QDox parse error in file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/dto/q.dto.java (full report at: "C:\Users\vguhankm\projects\MetroPark\.metals\.reports\metals-full\2026-07-01\r_qdox-error_12-36-56-164.md")
+2026.07.01 12:36:56 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/dto/q.dto.java. Output:
+
+2026.07.01 12:36:56 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:56 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:56 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java
+2026.07.01 12:36:56 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java. Using fallback presentation compiler.
+2026.07.01 12:36:56 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/dto/q.java. Output:
+
+2026.07.01 12:36:56 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.dto.java. Using fallback presentation compiler.
+2026.07.01 12:36:56 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java. Using fallback presentation compiler.
+2026.07.01 12:36:56 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java. Using fallback presentation compiler.
+2026.07.01 12:36:56 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java. Using fallback presentation compiler.
+2026.07.01 12:36:56 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java. Using fallback presentation compiler.
+2026.07.01 12:36:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java. Using fallback presentation compiler.
+2026.07.01 12:36:57 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java
+2026.07.01 12:36:57 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\q.java. Using fallback presentation compiler.
+2026.07.01 12:36:57 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java
+2026.07.01 12:36:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.01 12:36:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.01 12:36:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.01 12:36:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.01 12:37:00 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.01 12:37:10 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java
+2026.07.01 12:37:10 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/repo/qr.java. Output:
+
+2026.07.01 12:37:10 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:10 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:10 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:10 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:11 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:10 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:11 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java
+2026.07.01 12:37:11 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:12 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:12 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:12 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:12 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java
+2026.07.01 12:37:12 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:13 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/repo/qr.java. Output:
+
+2026.07.01 12:37:13 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\QueueRepository.java
+2026.07.01 12:37:13 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\QueueRepository.java. Using fallback presentation compiler.
+2026.07.01 12:37:13 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\QueueRepository.java. Using fallback presentation compiler.
+2026.07.01 12:37:13 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\qr.java. Using fallback presentation compiler.
+2026.07.01 12:37:12 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\QueueRepository.java. Using fallback presentation compiler.
+2026.07.01 12:37:13 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\QueueRepository.java. Using fallback presentation compiler.
+2026.07.01 12:37:18 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\repo\QueueRepository.java. Using fallback presentation compiler.
+2026.07.01 12:37:28 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java
+2026.07.01 12:37:28 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/s.java. Output:
+
+2026.07.01 12:37:28 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:29 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:29 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:29 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:29 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:29 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:30 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java
+2026.07.01 12:37:30 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:30 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:30 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:30 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:30 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:30 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:31 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java
+2026.07.01 12:37:31 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:31 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/s.java. Output:
+
+2026.07.01 12:37:30 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\QueueService.java
+2026.07.01 12:37:31 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\QueueService.java. Using fallback presentation compiler.
+2026.07.01 12:37:31 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\s.java. Using fallback presentation compiler.
+2026.07.01 12:37:31 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\QueueService.java. Using fallback presentation compiler.
+2026.07.01 12:37:31 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\QueueService.java. Using fallback presentation compiler.
+Jul 01, 2026 12:37:31 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 786
+2026.07.01 12:37:31 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\QueueService.java. Using fallback presentation compiler.
+2026.07.01 12:37:32 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\QueueService.java. Using fallback presentation compiler.
+2026.07.01 12:37:49 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java
+2026.07.01 12:37:49 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/cont.java. Output:
+
+2026.07.01 12:37:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+Jul 01, 2026 12:37:49 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 796
+2026.07.01 12:37:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:49 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java
+2026.07.01 12:37:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:51 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java
+2026.07.01 12:37:51 WARN  Running javac-semanticdb failed for file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/controller/cont.java. Output:
+
+2026.07.01 12:37:51 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.01 12:37:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:37:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:37:51 INFO  no build target found for c:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\cont.java. Using fallback presentation compiler.
+2026.07.01 12:37:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+Jul 01, 2026 12:37:52 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 818
+2026.07.01 12:37:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:37:51 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:37:52 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.01 12:37:52 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.01 12:37:52 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.01 12:37:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:37:56 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:37:58 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:09 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:09 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:09 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:09 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:13 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.01 12:38:13 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:13 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.01 12:38:13 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:14 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.01 12:38:14 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:14 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.01 12:38:14 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.01 12:38:18 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.02 11:13:55 INFO  Started: Metals version 1.6.7 in folders 'C:\Users\vguhankm\projects\MetroPark' for client Visual Studio Code 1.126.0.
+2026.07.02 11:13:55 INFO  Memory monitor started
+2026.07.02 11:14:00 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
+2026.07.02 11:14:00 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.02 11:14:01 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.02 11:14:03 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java
+2026.07.02 11:14:12 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.02 12:42:14 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\QueueController.java. Using fallback presentation compiler.
+2026.07.02 12:48:58 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\LocationTypeController.java
+2026.07.02 12:48:58 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\LocationTypeController.java. Using fallback presentation compiler.
+Jul 02, 2026 12:48:59 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 14
+2026.07.02 12:48:59 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\LocationTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:48:58 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\LocationTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:48:59 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\LocationTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:01 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\LocationTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:03 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\LocationTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:03 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\LocationTypeDto.java
+2026.07.02 12:49:03 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\LocationTypeDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:03 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\LocationTypeDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:03 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\LocationTypeDto.java. Using fallback presentation compiler.
+Jul 02, 2026 12:49:03 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 25
+Jul 02, 2026 12:49:03 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 29
+2026.07.02 12:49:03 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\LocationTypeDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:04 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\LocationTypeDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:05 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java
+2026.07.02 12:49:05 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:05 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:05 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:05 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:06 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\LocationTypeDto.java. Using fallback presentation compiler.
+2026.07.02 12:49:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:46 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java
+2026.07.02 12:49:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:46 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+Jul 02, 2026 12:49:49 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 56
+2026.07.02 12:49:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:54 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:55 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:49:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:50:03 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:50:03 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:50:04 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:50:04 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:50:07 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 12:50:07 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.02 15:27:10 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.06 12:10:33 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.06 12:10:34 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.06 12:10:35 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.06 12:10:36 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.06 12:11:02 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\VehicleTypeController.java. Using fallback presentation compiler.
+2026.07.06 12:11:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.06 12:11:50 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java
+2026.07.06 12:11:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+Jul 06, 2026 12:11:50 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 90
+2026.07.06 12:11:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.06 12:11:50 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+Jul 06, 2026 12:11:57 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+2026.07.06 12:11:57 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+Jul 06, 2026 12:11:58 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+2026.07.06 12:12:01 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.06 12:12:07 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.06 12:15:12 INFO  Shutting down server
+2026.07.06 12:15:12 INFO  Memory monitor stopped
+2026.07.06 12:15:12 INFO  shutting down Metals
+2026.07.06 12:15:12 INFO  Exiting server
+2026.07.06 12:15:51 INFO  Started: Metals version 1.6.7 in folders 'C:\Users\vguhankm\projects\MetroPark' for client Visual Studio Code 1.126.0.
+2026.07.06 12:15:51 INFO  time: initialize in 0.32s
+2026.07.06 12:15:51 INFO  Memory monitor started
+2026.07.06 12:15:54 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
+2026.07.06 12:15:54 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.06 12:15:57 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java
+2026.07.06 12:15:59 INFO  time: code lens generation in 1.37s
+2026.07.06 12:16:15 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.06 12:18:05 INFO  Shutting down server
+2026.07.06 12:18:05 INFO  Memory monitor stopped
+2026.07.06 12:18:05 INFO  shutting down Metals
+2026.07.06 12:18:05 INFO  Exiting server
+2026.07.06 12:18:44 INFO  Started: Metals version 1.6.7 in folders 'C:\Users\vguhankm\projects\MetroPark' for client Visual Studio Code 1.126.0.
+2026.07.06 12:18:44 INFO  Memory monitor started
+2026.07.06 12:18:47 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
+2026.07.06 12:18:47 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+Jul 06, 2026 12:18:49 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 2
+2026.07.06 12:18:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+2026.07.06 12:18:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
+Jul 06, 2026 12:18:49 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 3
+Jul 06, 2026 12:18:49 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 8
+2026.07.06 12:18:49 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\dto\QueueDto.java. Using fallback presentation compiler.
