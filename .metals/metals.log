@@ -9670,3 +9670,9 @@ WARNING: Unmatched cancel notification for request id 410
 2026.07.06 12:54:30 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\service\GateService.java. Using fallback presentation compiler.
 Jul 06, 2026 12:54:44 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
 INFO: Unsupported notification method: $/setTrace
+2026.07.06 12:55:52 WARN  no build target for: C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java
+2026.07.06 12:55:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
+2026.07.06 12:55:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
+2026.07.06 12:55:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
+2026.07.06 12:55:52 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
+2026.07.06 12:55:53 INFO  no build target found for C:\Users\vguhankm\projects\MetroPark\Metropark\src\main\java\com\example\Metropark\controller\GateController.java. Using fallback presentation compiler.
