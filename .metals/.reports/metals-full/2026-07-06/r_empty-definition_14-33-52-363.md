@@ -1,14 +1,23 @@
+error id: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/VehicleService.java:_empty_/VehicleDto#isActive#
+file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/VehicleService.java
+empty definition using pc, found symbol in pc: _empty_/VehicleDto#isActive#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 1195
+uri: file:///C:/Users/vguhankm/projects/MetroPark/Metropark/src/main/java/com/example/Metropark/service/VehicleService.java
+text:
+```scala
 package com.example.Metropark.service;
-
-import java.time.LocalDateTime;
-
-import org.springframework.stereotype.Service;
 
 import com.example.Metropark.dto.VehicleDto;
 import com.example.Metropark.repo.VehicleRepository;
-
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
 
 @Service
 public class VehicleService {
@@ -32,7 +41,7 @@ public class VehicleService {
                 .replaceAll("[\\s\\-]", "")
                 .toUpperCase();
 
-        Boolean isActive = (dto.isActive() != null) ? dto.isActive() : Boolean.TRUE;
+        Boolean isActive = (dto.isActive() != null) ? dto.isA@@ctive() : true;
         LocalDateTime now = LocalDateTime.now();
 
         VehicleDto cleanDto = new VehicleDto(
@@ -73,3 +82,9 @@ public class VehicleService {
                 });
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: _empty_/VehicleDto#isActive#
