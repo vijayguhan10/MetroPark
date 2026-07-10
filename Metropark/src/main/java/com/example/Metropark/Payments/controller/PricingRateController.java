@@ -59,10 +59,9 @@ public class PricingRateController {
         public Mono<ResponseEntity<PricingRateDto>> resolve(
                         @RequestParam String locationId,
                         @RequestParam Integer vehicleTypeId,
-                        @RequestParam Integer reservationClassId,
                         @RequestParam(required = false) LocalDateTime effectiveAt) {
 
-                return service.resolveRate(locationId, vehicleTypeId, reservationClassId, effectiveAt)
+                return service.resolveRate(locationId, vehicleTypeId, effectiveAt)
                                 .map(ResponseEntity::ok)
                                 .defaultIfEmpty(ResponseEntity.notFound().build());
         }

@@ -14,7 +14,6 @@ public record PricingRateDto(
                 @JsonProperty("rateId") Long rateId,
                 @JsonProperty("locationId") @NotBlank String locationId,
                 @JsonProperty("vehicleTypeId") @NotNull Integer vehicleTypeId,
-                @JsonProperty("reservationClassId") @NotNull Integer reservationClassId,
                 @JsonProperty("baseRate") @NotNull @Positive BigDecimal baseRate,
                 @JsonProperty("currency") @NotBlank @Size(min = 3, max = 3) String currency,
                 @JsonProperty("effectiveFrom") @NotNull LocalDateTime effectiveFrom,

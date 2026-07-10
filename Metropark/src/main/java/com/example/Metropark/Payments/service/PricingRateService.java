@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import com.example.Metropark.location.repo.LocationRepository;
 import com.example.Metropark.payments.dto.PricingRateDto;
 import com.example.Metropark.payments.repo.PricingRateRepository;
-import com.example.Metropark.reservation.repo.ReservationClassRepository;
 import com.example.Metropark.vehicle.repo.VehicleTypeRepository;
 
 import reactor.core.publisher.Flux;
@@ -20,25 +19,22 @@ public class PricingRateService {
     private final PricingRateRepository repository;
     private final LocationRepository locationRepository;
     private final VehicleTypeRepository vehicleTypeRepository;
-    private final ReservationClassRepository reservationClassRepository;
 
     public PricingRateService(
             PricingRateRepository repository,
             LocationRepository locationRepository,
-            VehicleTypeRepository vehicleTypeRepository,
-            ReservationClassRepository reservationClassRepository) {
+            VehicleTypeRepository vehicleTypeRepository) {
 
         this.repository = repository;
         this.locationRepository = locationRepository;
         this.vehicleTypeRepository = vehicleTypeRepository;
-        this.reservationClassRepository = reservationClassRepository;
     }
 
     public Mono<Integer> createPricingRate(PricingRateDto dto) {
         PricingRateDto cleanDto = normalize(dto, null);
         return validateReferences(cleanDto)
                 .then(repository.hasConflictingRate(
-                        cleanDto.locationId(), cleanDto.vehicleTypeId(), cleanDto.reservationClassId(),
+                        cleanDto.locationId(), cleanDto.vehicleTypeId(),
                         cleanDto.effectiveFrom(), cleanDto.effectiveTo(), null))
                 .flatMap(conflict -> conflict
                         ? Mono.error(new IllegalStateException(
@@ -58,7 +54,7 @@ public class PricingRateService {
         PricingRateDto cleanDto = normalize(dto, id);
         return validateReferences(cleanDto)
                 .then(repository.hasConflictingRate(
-                        cleanDto.locationId(), cleanDto.vehicleTypeId(), cleanDto.reservationClassId(),
+                        cleanDto.locationId(), cleanDto.vehicleTypeId(),
                         cleanDto.effectiveFrom(), cleanDto.effectiveTo(), id))
                 .flatMap(conflict -> conflict
                         ? Mono.error(new IllegalStateException(
@@ -73,14 +69,13 @@ public class PricingRateService {
     public Mono<PricingRateDto> resolveRate(
             String locationId,
             Integer vehicleTypeId,
-            Integer reservationClassId,
             LocalDateTime effectiveAt) {
 
         if (effectiveAt == null) {
             effectiveAt = LocalDateTime.now();
         }
 
-        return repository.findEffectiveRate(locationId, vehicleTypeId, reservationClassId, effectiveAt);
+        return repository.findEffectiveRate(locationId, vehicleTypeId, effectiveAt);
     }
 
     private Mono<Void> validateReferences(PricingRateDto dto) {
@@ -92,10 +87,7 @@ public class PricingRateService {
                     }
                     return vehicleTypeRepository.findById(dto.vehicleTypeId())
                             .switchIfEmpty(Mono.error(new IllegalArgumentException("Vehicle type not found.")))
-                            .then(reservationClassRepository.findById(dto.reservationClassId())
-                                    .switchIfEmpty(
-                                            Mono.error(new IllegalArgumentException("Reservation class not found.")))
-                                    .then());
+                            .then();
                 });
     }
 
@@ -103,8 +95,8 @@ public class PricingRateService {
         if (dto.locationId() == null || dto.locationId().isBlank()) {
             throw new IllegalArgumentException("Location ID is required.");
         }
-        if (dto.vehicleTypeId() == null || dto.reservationClassId() == null) {
-            throw new IllegalArgumentException("Vehicle type and reservation class are required.");
+        if (dto.vehicleTypeId() == null || dto.vehicleTypeId() <= 0) {
+            throw new IllegalArgumentException("Vehicle type is required.");
         }
         if (dto.baseRate().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Base rate must be greater than zero.");
@@ -123,7 +115,6 @@ public class PricingRateService {
                 id != null ? id : dto.rateId(),
                 dto.locationId().trim(),
                 dto.vehicleTypeId(),
-                dto.reservationClassId(),
                 dto.baseRate(),
                 dto.currency().trim().toUpperCase(),
                 dto.effectiveFrom(),
