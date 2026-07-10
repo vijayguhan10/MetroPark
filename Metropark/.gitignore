@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Metals / Scala tooling ###
+.metals/
+.bloop/
+.bsp/
+.scala-build/
