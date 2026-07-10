@@ -13,7 +13,6 @@ import com.example.Metropark.payments.dto.PaymentGatewayUpdateDto;
 import com.example.Metropark.payments.dto.PaymentHistoryDto;
 import com.example.Metropark.payments.dto.PaymentStatusUpdateDto;
 import com.example.Metropark.payments.repo.PaymentRepository;
-import com.example.Metropark.reservation.repo.ReservationRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -36,31 +35,22 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentHistoryService historyService;
     private final PaymentMethodService paymentMethodService;
-    private final ReservationRepository reservationRepository;
     private final ParkingSessionRepository sessionRepository;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             PaymentHistoryService historyService,
             PaymentMethodService paymentMethodService,
-            ReservationRepository reservationRepository,
             ParkingSessionRepository sessionRepository) {
 
         this.paymentRepository = paymentRepository;
         this.historyService = historyService;
         this.paymentMethodService = paymentMethodService;
-        this.reservationRepository = reservationRepository;
         this.sessionRepository = sessionRepository;
     }
 
     public Mono<Integer> createPayment(PaymentDto dto) {
         PaymentDto cleanDto = normalize(dto, null);
-
-        Mono<Void> reservationValidation = cleanDto.reservationId() == null
-                ? Mono.empty()
-                : reservationRepository.findById(cleanDto.reservationId())
-                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Reservation not found.")))
-                        .then();
 
         Mono<Void> sessionValidation = cleanDto.sessionId() == null
                 ? Mono.empty()
@@ -77,11 +67,10 @@ public class PaymentService {
 
         Mono<Void> methodValidation = paymentMethodService.requireActiveMethod(cleanDto.methodId()).then();
 
-        return Mono.when(reservationValidation, sessionValidation, referenceValidation, methodValidation)
+        return Mono.when(sessionValidation, referenceValidation, methodValidation)
                 .then(Mono.defer(() -> {
-                    if (cleanDto.reservationId() == null && cleanDto.sessionId() == null) {
-                        return Mono.error(
-                                new IllegalArgumentException("Either reservation ID or session ID is required."));
+                    if (cleanDto.sessionId() == null) {
+                        return Mono.error(new IllegalArgumentException("Session ID is required."));
                     }
 
                     return paymentRepository.create(cleanDto)
@@ -115,10 +104,6 @@ public class PaymentService {
             return Mono.error(new IllegalArgumentException("Transaction reference is required."));
         }
         return paymentRepository.findByTransactionReference(transactionReference.trim());
-    }
-
-    public Flux<PaymentDto> getPaymentsByReservationId(Integer reservationId) {
-        return paymentRepository.findByReservationId(reservationId);
     }
 
     public Flux<PaymentDto> getPaymentsBySessionId(Integer sessionId) {
@@ -274,7 +259,6 @@ public class PaymentService {
         return new PaymentDto(
                 id != null ? id : dto.paymentId(),
                 normalizedReference,
-                dto.reservationId(),
                 dto.sessionId(),
                 dto.methodId(),
                 dto.amount(),

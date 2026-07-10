@@ -1,10 +1,19 @@
 package com.example.Metropark.gate.controller;
 
-import com.example.Metropark.gate.dto.GateDto;
-import com.example.Metropark.gate.service.GateService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.Metropark.gate.dto.GateDto;
+import com.example.Metropark.gate.service.GateService;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -22,8 +31,8 @@ public class GateController {
     public Mono<ResponseEntity<String>> create(@RequestBody GateDto dto) {
         return service.createGate(dto)
                 .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Gate created successfully."))
-                .onErrorResume(IllegalArgumentException.class, e -> 
-                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
     @GetMapping
@@ -40,14 +49,14 @@ public class GateController {
 
     @PatchMapping("/{id}/status")
     public Mono<ResponseEntity<String>> updateStatus(
-            @PathVariable Integer id, 
+            @PathVariable Integer id,
             @RequestParam String status) {
-            
+
         return service.updateGateStatus(id, status)
                 .map(rows -> ResponseEntity.ok("Gate status updated successfully."))
-                .onErrorResume(IllegalArgumentException.class, e -> 
-                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
-                .onErrorResume(IllegalStateException.class, e -> 
-                        Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage())));
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
+                .onErrorResume(IllegalStateException.class,
+                        e -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage())));
     }
 }
