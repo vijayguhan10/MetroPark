@@ -1,0 +1,6 @@
+# Root-level workspace and tooling artifacts
+.metals/
+.bloop/
+.bsp/
+.scala-build/
+.vscode/
