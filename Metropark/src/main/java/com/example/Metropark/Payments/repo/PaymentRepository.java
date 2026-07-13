@@ -25,7 +25,7 @@ public class PaymentRepository {
 
     public Mono<Integer> create(PaymentDto dto) {
         return Mono.from(dsl.insertInto(table("payments"))
-            .columns(
+                .columns(
                         field("transaction_reference"), field("session_id"), field("user_id"),
                         field("method_id"), field("amount"), field("currency"), field("payment_status"),
                         field("gateway_response_code"), field("gateway_response_message"), field("processed_at"),

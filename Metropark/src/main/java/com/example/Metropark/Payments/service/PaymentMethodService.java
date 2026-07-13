@@ -1,13 +1,15 @@
 package com.example.Metropark.payments.service;
 
-import com.example.Metropark.payments.dto.PaymentMethodDto;
-import com.example.Metropark.payments.repo.PaymentMethodRepository;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import java.time.LocalDateTime;
 import java.util.Set;
+
+import org.springframework.stereotype.Service;
+
+import com.example.Metropark.payments.dto.PaymentMethodDto;
+import com.example.Metropark.payments.repo.PaymentMethodRepository;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 public class PaymentMethodService {
@@ -50,12 +52,15 @@ public class PaymentMethodService {
         return repository.delete(id);
     }
 
-    public Mono<PaymentMethodDto> requireActiveMethod(Integer methodId) {
+    public Mono<Void> requireActiveMethod(Integer methodId) {
         return repository.findById(methodId.longValue())
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Payment method not found.")))
-                .flatMap(method -> Boolean.TRUE.equals(method.isActive())
-                        ? Mono.just(method)
-                        : Mono.error(new IllegalStateException("Payment method is disabled.")));
+                .flatMap(method -> {
+                    if (!Boolean.TRUE.equals(method.isActive())) {
+                        return Mono.error(new IllegalStateException("Payment method is disabled."));
+                    }
+                    return Mono.empty();
+                });
     }
 
     private PaymentMethodDto normalize(PaymentMethodDto dto, Long id) {
