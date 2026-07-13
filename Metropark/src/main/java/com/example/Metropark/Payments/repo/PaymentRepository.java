@@ -1,17 +1,18 @@
 package com.example.Metropark.payments.repo;
 
-import com.example.Metropark.payments.dto.PaymentDto;
-import org.jooq.DSLContext;
-import org.jooq.Record;
-import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
+import org.springframework.stereotype.Repository;
+
+import com.example.Metropark.payments.dto.PaymentDto;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Repository
 public class PaymentRepository {
@@ -24,13 +25,13 @@ public class PaymentRepository {
 
     public Mono<Integer> create(PaymentDto dto) {
         return Mono.from(dsl.insertInto(table("payments"))
-                .columns(
-                        field("transaction_reference"), field("reservation_id"), field("session_id"),
+            .columns(
+                        field("transaction_reference"), field("session_id"), field("user_id"),
                         field("method_id"), field("amount"), field("currency"), field("payment_status"),
                         field("gateway_response_code"), field("gateway_response_message"), field("processed_at"),
                         field("created_at"), field("updated_at"))
                 .values(
-                        dto.transactionReference(), dto.reservationId(), dto.sessionId(),
+                        dto.transactionReference(), dto.sessionId(), dto.userId(),
                         dto.methodId(), dto.amount(), dto.currency(), dto.paymentStatus(),
                         dto.gatewayResponseCode(), dto.gatewayResponseMessage(), dto.processedAt(),
                         dto.createdAt(), dto.updatedAt()));
@@ -49,12 +50,6 @@ public class PaymentRepository {
     public Mono<PaymentDto> findByTransactionReference(String transactionReference) {
         return Mono.from(dsl.selectFrom(table("payments"))
                 .where(field("transaction_reference").eq(transactionReference)))
-                .map(this::mapToDto);
-    }
-
-    public Flux<PaymentDto> findByReservationId(Integer reservationId) {
-        return Flux.from(dsl.selectFrom(table("payments"))
-                .where(field("reservation_id").eq(reservationId)))
                 .map(this::mapToDto);
     }
 
@@ -101,17 +96,19 @@ public class PaymentRepository {
     }
 
     public Mono<Boolean> existsByTransactionReference(String transactionReference) {
-        return Mono.fromSupplier(() -> dsl.fetchExists(
-                dsl.selectOne().from(table("payments"))
-                        .where(field("transaction_reference").eq(transactionReference))));
+        return Mono.from(dsl.selectOne()
+                .from(table("payments"))
+                .where(field("transaction_reference").eq(transactionReference)))
+                .map(record -> true)
+                .defaultIfEmpty(false);
     }
 
     private PaymentDto mapToDto(Record record) {
         return new PaymentDto(
                 record.get("payment_id", Long.class),
                 record.get("transaction_reference", String.class),
-                record.get("reservation_id", Integer.class),
                 record.get("session_id", Integer.class),
+                record.get("user_id", String.class),
                 record.get("method_id", Integer.class),
                 record.get("amount", BigDecimal.class),
                 record.get("currency", String.class),
