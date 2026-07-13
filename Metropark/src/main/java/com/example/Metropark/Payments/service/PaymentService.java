@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
 public class PaymentService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PaymentService.class);
-    
+
     private static final Set<String> ALLOWED_STATUSES = Set.of(
             "PENDING", "PROCESSING", "SUCCESS", "FAILED", "CANCELLED", "REFUNDED");
     private static final Set<String> FINAL_STATUSES = Set.of("SUCCESS", "FAILED", "CANCELLED", "REFUNDED");
@@ -67,8 +67,7 @@ public class PaymentService {
                                 ? Mono.error(new IllegalStateException("Transaction reference already exists."))
                                 : Mono.empty());
 
-        Mono<Void> methodValidation = paymentMethodService.requireActiveMethod(cleanDto.methodId()).then();
-
+        Mono<Void> methodValidation = paymentMethodService.requireActiveMethod(cleanDto.methodId());
         return Mono.when(sessionValidation, referenceValidation, methodValidation)
                 .then(Mono.defer(() -> {
                     if (cleanDto.sessionId() == null) {
@@ -148,26 +147,26 @@ public class PaymentService {
                             changedBy,
                             dto.reason(),
                             dto.gatewayReference());
-                    
+
                     return validateTransition(existing.paymentStatus(), normalizedStatus)
-                        .then(paymentRepository.updateStatus(
-                                id,
-                                existing.paymentStatus(),
-                                normalizedStatus,
-                                FINAL_STATUSES.contains(normalizedStatus) ? LocalDateTime.now()
-                                        : existing.processedAt(),
-                                LocalDateTime.now())
-                                .flatMap(rows -> rows == 0
-                                        ? Mono.error(new IllegalStateException(
-                                                "Payment update failed due to a concurrent change."))
-                                        : Mono.fromRunnable(() -> auditLogger.logPaymentStatusUpdated(
-                                                id,
-                                                existing.paymentStatus(),
-                                                normalizedStatus,
-                                                changedBy,
-                                                dto.reason(),
-                                                dto.gatewayReference()))
-                                                .thenReturn(rows)));
+                            .then(paymentRepository.updateStatus(
+                                    id,
+                                    existing.paymentStatus(),
+                                    normalizedStatus,
+                                    FINAL_STATUSES.contains(normalizedStatus) ? LocalDateTime.now()
+                                            : existing.processedAt(),
+                                    LocalDateTime.now())
+                                    .flatMap(rows -> rows == 0
+                                            ? Mono.error(new IllegalStateException(
+                                                    "Payment update failed due to a concurrent change."))
+                                            : Mono.fromRunnable(() -> auditLogger.logPaymentStatusUpdated(
+                                                    id,
+                                                    existing.paymentStatus(),
+                                                    normalizedStatus,
+                                                    changedBy,
+                                                    dto.reason(),
+                                                    dto.gatewayReference()))
+                                                    .thenReturn(rows)));
                 });
     }
 
