@@ -114,8 +114,11 @@ public class PricingRateRepository {
                                 ? baseConditions.and(overlapConditions)
                                 : baseConditions.and(overlapConditions).and(field("rate_id").ne(excludeRateId));
 
-                return Mono.fromSupplier(() -> dsl.fetchExists(
-                                dsl.selectOne().from(table("pricing_rates")).where(query)));
+                return Mono.from(dsl.selectOne()
+                                .from(table("pricing_rates"))
+                                .where(query))
+                                .map(record -> true)
+                                .defaultIfEmpty(false);
         }
 
         private PricingRateDto mapToDto(Record record) {

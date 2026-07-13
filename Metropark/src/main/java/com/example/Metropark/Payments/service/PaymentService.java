@@ -5,12 +5,12 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
 import com.example.Metropark.payments.dto.PaymentDto;
-import com.example.Metropark.payments.dto.PaymentGatewayUpdateDto;
-import com.example.Metropark.payments.dto.PaymentHistoryDto;
 import com.example.Metropark.payments.dto.PaymentStatusUpdateDto;
 import com.example.Metropark.payments.repo.PaymentRepository;
 
@@ -20,6 +20,8 @@ import reactor.core.publisher.Mono;
 @Service
 public class PaymentService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PaymentService.class);
+    
     private static final Set<String> ALLOWED_STATUSES = Set.of(
             "PENDING", "PROCESSING", "SUCCESS", "FAILED", "CANCELLED", "REFUNDED");
     private static final Set<String> FINAL_STATUSES = Set.of("SUCCESS", "FAILED", "CANCELLED", "REFUNDED");
@@ -33,18 +35,18 @@ public class PaymentService {
             "REFUNDED", Set.of());
 
     private final PaymentRepository paymentRepository;
-    private final PaymentHistoryService historyService;
+    private final PaymentAuditLogger auditLogger;
     private final PaymentMethodService paymentMethodService;
     private final ParkingSessionRepository sessionRepository;
 
     public PaymentService(
             PaymentRepository paymentRepository,
-            PaymentHistoryService historyService,
+            PaymentAuditLogger auditLogger,
             PaymentMethodService paymentMethodService,
             ParkingSessionRepository sessionRepository) {
 
         this.paymentRepository = paymentRepository;
-        this.historyService = historyService;
+        this.auditLogger = auditLogger;
         this.paymentMethodService = paymentMethodService;
         this.sessionRepository = sessionRepository;
     }
@@ -73,21 +75,27 @@ public class PaymentService {
                         return Mono.error(new IllegalArgumentException("Session ID is required."));
                     }
 
-                    return paymentRepository.create(cleanDto)
-                            .flatMap(rows -> paymentRepository
-                                    .findByTransactionReference(cleanDto.transactionReference())
-                                    .switchIfEmpty(Mono.error(new IllegalStateException(
-                                            "Payment was created but could not be reloaded for history tracking.")))
-                                    .flatMap(savedPayment -> historyService.createHistory(new PaymentHistoryDto(
-                                            null,
-                                            savedPayment.paymentId(),
-                                            null,
-                                            savedPayment.paymentStatus(),
-                                            "SYSTEM",
-                                            "Payment created",
-                                            savedPayment.transactionReference(),
-                                            LocalDateTime.now()))
-                                            .thenReturn(rows)));
+                    // Fetch session to get user_id
+                    return sessionRepository.findById(cleanDto.sessionId())
+                            .switchIfEmpty(Mono.error(new IllegalArgumentException("Parking session not found.")))
+                            .flatMap(session -> {
+                                PaymentDto dtoWithUserId = new PaymentDto(
+                                        cleanDto.paymentId(),
+                                        cleanDto.transactionReference(),
+                                        cleanDto.sessionId(),
+                                        session.userId(),
+                                        cleanDto.methodId(),
+                                        cleanDto.amount(),
+                                        cleanDto.currency(),
+                                        cleanDto.paymentStatus(),
+                                        cleanDto.gatewayResponseCode(),
+                                        cleanDto.gatewayResponseMessage(),
+                                        cleanDto.processedAt(),
+                                        cleanDto.createdAt(),
+                                        cleanDto.updatedAt());
+                                return paymentRepository.create(dtoWithUserId)
+                                        .doOnSuccess(rows -> auditLogger.logPaymentCreated(dtoWithUserId, rows));
+                            });
                 }));
     }
 
@@ -130,7 +138,18 @@ public class PaymentService {
 
         return paymentRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Payment not found.")))
-                .flatMap(existing -> validateTransition(existing.paymentStatus(), normalizedStatus)
+                .flatMap(existing -> {
+                    // Log before DB update
+                    LOGGER.info(
+                            "Payment status update initiated: paymentId={}, currentStatus={}, newStatus={}, changedBy={}, reason={}, gatewayReference={}",
+                            id,
+                            existing.paymentStatus(),
+                            normalizedStatus,
+                            changedBy,
+                            dto.reason(),
+                            dto.gatewayReference());
+                    
+                    return validateTransition(existing.paymentStatus(), normalizedStatus)
                         .then(paymentRepository.updateStatus(
                                 id,
                                 existing.paymentStatus(),
@@ -141,72 +160,15 @@ public class PaymentService {
                                 .flatMap(rows -> rows == 0
                                         ? Mono.error(new IllegalStateException(
                                                 "Payment update failed due to a concurrent change."))
-                                        : historyService.createHistory(new PaymentHistoryDto(
-                                                null,
+                                        : Mono.fromRunnable(() -> auditLogger.logPaymentStatusUpdated(
                                                 id,
                                                 existing.paymentStatus(),
                                                 normalizedStatus,
                                                 changedBy,
                                                 dto.reason(),
-                                                dto.gatewayReference(),
-                                                LocalDateTime.now())).thenReturn(rows))));
-    }
-
-    public Mono<Integer> updateGatewayResponse(Long id, PaymentGatewayUpdateDto dto) {
-        String normalizedStatus = dto.paymentStatus().trim().toUpperCase();
-        String changedBy = dto.changedBy() == null || dto.changedBy().isBlank()
-                ? "GATEWAY"
-                : dto.changedBy().trim().toUpperCase();
-
-        if (!ALLOWED_STATUSES.contains(normalizedStatus)) {
-            return Mono.error(new IllegalArgumentException("Invalid payment status."));
-        }
-        if (!ALLOWED_CHANGED_BY.contains(changedBy)) {
-            return Mono.error(new IllegalArgumentException("changedBy must be USER, SYSTEM, GATEWAY, or ADMIN."));
-        }
-
-        if (dto.transactionReference() != null && !dto.transactionReference().isBlank()) {
-            return paymentRepository.existsByTransactionReference(dto.transactionReference().trim())
-                    .flatMap(exists -> exists
-                            ? Mono.error(new IllegalStateException("Transaction reference already exists."))
-                            : applyGatewayUpdate(id, dto, normalizedStatus, changedBy));
-        }
-
-        return applyGatewayUpdate(id, dto, normalizedStatus, changedBy);
-    }
-
-    private Mono<Integer> applyGatewayUpdate(
-            Long id,
-            PaymentGatewayUpdateDto dto,
-            String normalizedStatus,
-            String changedBy) {
-
-        return paymentRepository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Payment not found.")))
-                .flatMap(existing -> validateTransition(existing.paymentStatus(), normalizedStatus)
-                        .then(paymentRepository.updateGatewayResponse(
-                                id,
-                                existing.paymentStatus(),
-                                normalizedStatus,
-                                dto.transactionReference() == null || dto.transactionReference().isBlank()
-                                        ? existing.transactionReference()
-                                        : dto.transactionReference().trim(),
-                                dto.gatewayResponseCode().trim(),
-                                dto.gatewayResponseMessage(),
-                                dto.processedAt() == null ? LocalDateTime.now() : dto.processedAt(),
-                                LocalDateTime.now())
-                                .flatMap(rows -> rows == 0
-                                        ? Mono.error(new IllegalStateException(
-                                                "Payment update failed due to a concurrent change."))
-                                        : historyService.createHistory(new PaymentHistoryDto(
-                                                null,
-                                                id,
-                                                existing.paymentStatus(),
-                                                normalizedStatus,
-                                                changedBy,
-                                                dto.reason(),
-                                                dto.transactionReference(),
-                                                LocalDateTime.now())).thenReturn(rows))));
+                                                dto.gatewayReference()))
+                                                .thenReturn(rows)));
+                });
     }
 
     private Mono<Void> validateTransition(String currentStatus, String nextStatus) {
@@ -260,6 +222,7 @@ public class PaymentService {
                 id != null ? id : dto.paymentId(),
                 normalizedReference,
                 dto.sessionId(),
+                dto.userId(),
                 dto.methodId(),
                 dto.amount(),
                 dto.currency().trim().toUpperCase(),

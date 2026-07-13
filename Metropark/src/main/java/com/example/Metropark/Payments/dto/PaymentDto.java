@@ -13,6 +13,7 @@ public record PaymentDto(
                 @JsonProperty("paymentId") Long paymentId,
                 @JsonProperty("transactionReference") String transactionReference,
                 @JsonProperty("sessionId") Integer sessionId,
+                @JsonProperty("userId") String userId,
                 @JsonProperty("methodId") @NotNull Integer methodId,
                 @JsonProperty("amount") @NotNull @Positive BigDecimal amount,
                 @JsonProperty("currency") @NotNull @Size(min = 3, max = 3) String currency,

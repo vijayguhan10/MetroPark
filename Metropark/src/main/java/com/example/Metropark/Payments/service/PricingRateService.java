@@ -95,7 +95,7 @@ public class PricingRateService {
         if (dto.locationId() == null || dto.locationId().isBlank()) {
             throw new IllegalArgumentException("Location ID is required.");
         }
-        if (dto.vehicleTypeId() == null || dto.vehicleTypeId() <= 0) {
+        if ( dto.vehicleTypeId() <= 0) {
             throw new IllegalArgumentException("Vehicle type is required.");
         }
         if (dto.baseRate().compareTo(BigDecimal.ZERO) <= 0) {

@@ -1,16 +1,17 @@
 package com.example.Metropark.payments.repo;
 
-import com.example.Metropark.payments.dto.PaymentMethodDto;
-import org.jooq.DSLContext;
-import org.jooq.Record;
-import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import java.time.LocalDateTime;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
+import org.springframework.stereotype.Repository;
+
+import com.example.Metropark.payments.dto.PaymentMethodDto;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Repository
 public class PaymentMethodRepository {
@@ -56,9 +57,11 @@ public class PaymentMethodRepository {
     }
 
     public Mono<Boolean> existsByMethodName(String methodName) {
-        return Mono.fromSupplier(() -> dsl.fetchExists(
-                dsl.selectOne().from(table("payment_methods"))
-                        .where(field("method_name").eq(methodName))));
+        return Mono.from(dsl.selectOne()
+                .from(table("payment_methods"))
+                .where(field("method_name").eq(methodName)))
+                .map(record -> true)
+                .defaultIfEmpty(false);
     }
 
     private PaymentMethodDto mapToDto(Record record) {
