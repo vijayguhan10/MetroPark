@@ -1,5 +1,7 @@
 package com.example.Metropark.payments.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +24,8 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/payments")
 public class PaymentController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PaymentController.class);
+
     private final PaymentService service;
 
     public PaymentController(PaymentService service) {
@@ -29,15 +33,17 @@ public class PaymentController {
     }
 
     @PostMapping
+
     public Mono<ResponseEntity<String>> create(@Valid @RequestBody PaymentDto dto) {
+        LOGGER.info("Creating payment: {}", dto);
         return service.createPayment(dto)
-                        .map(rows -> ResponseEntity.status(HttpStatus.CREATED)
-                                        .body("Payment created successfully."))
-                        .onErrorResume(IllegalArgumentException.class,
-                                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
-                        .onErrorResume(IllegalStateException.class,
-                                        e -> Mono.just(ResponseEntity.status(HttpStatus.CONFLICT)
-                                                        .body(e.getMessage())));
+                .map(rows -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body("Payment created successfully."))
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
+                .onErrorResume(IllegalStateException.class,
+                        e -> Mono.just(ResponseEntity.status(HttpStatus.CONFLICT)
+                                .body(e.getMessage())));
     }
 
     @GetMapping
@@ -48,15 +54,15 @@ public class PaymentController {
     @GetMapping("/{id}")
     public Mono<ResponseEntity<PaymentDto>> getById(@PathVariable Long id) {
         return service.getPaymentById(id)
-                        .map(ResponseEntity::ok)
-                        .defaultIfEmpty(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/reference/{transactionReference}")
     public Mono<ResponseEntity<PaymentDto>> getByReference(@PathVariable String transactionReference) {
         return service.getPaymentByTransactionReference(transactionReference)
-                        .map(ResponseEntity::ok)
-                        .defaultIfEmpty(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/session/{sessionId}")
@@ -66,13 +72,13 @@ public class PaymentController {
 
     @PatchMapping("/{id}/status")
     public Mono<ResponseEntity<String>> updateStatus(@PathVariable Long id,
-                    @Valid @RequestBody PaymentStatusUpdateDto dto) {
+            @Valid @RequestBody PaymentStatusUpdateDto dto) {
         return service.updatePaymentStatus(id, dto)
-                        .map(rows -> ResponseEntity.ok("Payment status updated successfully."))
-                        .onErrorResume(IllegalArgumentException.class,
-                                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
-                        .onErrorResume(IllegalStateException.class,
-                                        e -> Mono.just(ResponseEntity.status(HttpStatus.CONFLICT)
-                                                        .body(e.getMessage())));
+                .map(rows -> ResponseEntity.ok("Payment status updated successfully."))
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
+                .onErrorResume(IllegalStateException.class,
+                        e -> Mono.just(ResponseEntity.status(HttpStatus.CONFLICT)
+                                .body(e.getMessage())));
     }
 }

@@ -15,18 +15,11 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/parking-sessions")
 public class ParkingSessionController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ParkingSessionController.class);
-
-    private final ParkingSessionService service;
-
-    public ParkingSessionController(ParkingSessionService service) {
-        this.service = service;
+    private static final Logger LOGGER
     }
 
     @PostMapping
-     
     public Mono<ResponseEntity<String>> create(@RequestBody ParkingSessionDto dto) {
-        LOGGER.info("Creating parking session: {}", dto);
         return service.createSession(dto)
                 .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Parking session initiated successfully."))
                 .onErrorResume(IllegalArgumentException.class,
