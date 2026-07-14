@@ -3,7 +3,10 @@ package com.example.Metropark.payments.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.Metropark.location.repo.LocationRepository;
 import com.example.Metropark.payments.dto.PricingRateDto;
@@ -15,6 +18,8 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class PricingRateService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PricingRateService.class);
 
     private final PricingRateRepository repository;
     private final LocationRepository locationRepository;
@@ -30,7 +35,9 @@ public class PricingRateService {
         this.vehicleTypeRepository = vehicleTypeRepository;
     }
 
+    @Transactional
     public Mono<Integer> createPricingRate(PricingRateDto dto) {
+        LOGGER.info("Creating pricing rate: {}", dto);
         PricingRateDto cleanDto = normalize(dto, null);
         return validateReferences(cleanDto)
                 .then(repository.hasConflictingRate(
@@ -39,18 +46,28 @@ public class PricingRateService {
                 .flatMap(conflict -> conflict
                         ? Mono.error(new IllegalStateException(
                                 "A conflicting active pricing rule already exists for this combination and time range."))
-                        : repository.create(cleanDto));
+                        : repository.create(cleanDto)
+                                .doOnSuccess(rows -> LOGGER.info("Pricing rate created successfully, rows affected: {}", rows))
+                                .doOnError(e -> LOGGER.error("Error creating pricing rate: {}", e.getMessage())));
     }
 
     public Flux<PricingRateDto> getAllPricingRates() {
-        return repository.findAll();
+        LOGGER.debug("Fetching all pricing rates");
+        return repository.findAll()
+                .doOnComplete(() -> LOGGER.debug("Fetched all pricing rates successfully"))
+                .doOnError(e -> LOGGER.error("Error fetching all pricing rates: {}", e.getMessage()));
     }
 
     public Mono<PricingRateDto> getPricingRateById(Long id) {
-        return repository.findById(id);
+        LOGGER.debug("Fetching pricing rate by id: {}", id);
+        return repository.findById(id)
+                .doOnSuccess(dto -> LOGGER.debug("Fetched pricing rate: {}", dto))
+                .doOnError(e -> LOGGER.error("Error fetching pricing rate by id {}: {}", id, e.getMessage()));
     }
 
+    @Transactional
     public Mono<Integer> updatePricingRate(Long id, PricingRateDto dto) {
+        LOGGER.info("Updating pricing rate id: {} with data: {}", id, dto);
         PricingRateDto cleanDto = normalize(dto, id);
         return validateReferences(cleanDto)
                 .then(repository.hasConflictingRate(
@@ -59,11 +76,17 @@ public class PricingRateService {
                 .flatMap(conflict -> conflict
                         ? Mono.error(new IllegalStateException(
                                 "A conflicting active pricing rule already exists for this combination and time range."))
-                        : repository.update(id, cleanDto));
+                        : repository.update(id, cleanDto)
+                                .doOnSuccess(rows -> LOGGER.info("Pricing rate updated successfully, rows affected: {}", rows))
+                                .doOnError(e -> LOGGER.error("Error updating pricing rate id {}: {}", id, e.getMessage())));
     }
 
+    @Transactional
     public Mono<Integer> deletePricingRate(Long id) {
-        return repository.delete(id);
+        LOGGER.info("Deleting pricing rate id: {}", id);
+        return repository.delete(id)
+                .doOnSuccess(rows -> LOGGER.info("Pricing rate deleted successfully, rows affected: {}", rows))
+                .doOnError(e -> LOGGER.error("Error deleting pricing rate id {}: {}", id, e.getMessage()));
     }
 
     public Mono<PricingRateDto> resolveRate(
@@ -95,7 +118,7 @@ public class PricingRateService {
         if (dto.locationId() == null || dto.locationId().isBlank()) {
             throw new IllegalArgumentException("Location ID is required.");
         }
-        if ( dto.vehicleTypeId() <= 0) {
+        if (dto.vehicleTypeId() <= 0) {
             throw new IllegalArgumentException("Vehicle type is required.");
         }
         if (dto.baseRate().compareTo(BigDecimal.ZERO) <= 0) {

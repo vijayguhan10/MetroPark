@@ -8,6 +8,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
 import com.example.Metropark.payments.dto.PaymentDto;
@@ -51,7 +52,9 @@ public class PaymentService {
         this.sessionRepository = sessionRepository;
     }
 
+    @Transactional
     public Mono<Integer> createPayment(PaymentDto dto) {
+        LOGGER.info("Creating payment: {}", dto);
         PaymentDto cleanDto = normalize(dto, null);
 
         Mono<Void> sessionValidation = cleanDto.sessionId() == null
@@ -93,30 +96,49 @@ public class PaymentService {
                                         cleanDto.createdAt(),
                                         cleanDto.updatedAt());
                                 return paymentRepository.create(dtoWithUserId)
-                                        .doOnSuccess(rows -> auditLogger.logPaymentCreated(dtoWithUserId, rows));
+                                        .doOnSuccess(rows -> {
+                                            LOGGER.info("Payment created successfully, rows affected: {}", rows);
+                                            auditLogger.logPaymentCreated(dtoWithUserId, rows);
+                                        })
+                                        .doOnError(e -> LOGGER.error("Error creating payment: {}", e.getMessage()));
                             });
                 }));
     }
 
     public Flux<PaymentDto> getAllPayments() {
-        return paymentRepository.findAll();
+        LOGGER.debug("Fetching all payments");
+        return paymentRepository.findAll()
+                .doOnComplete(() -> LOGGER.debug("Fetched all payments successfully"))
+                .doOnError(e -> LOGGER.error("Error fetching all payments: {}", e.getMessage()));
     }
 
     public Mono<PaymentDto> getPaymentById(Long id) {
-        return paymentRepository.findById(id);
+        LOGGER.debug("Fetching payment by id: {}", id);
+        return paymentRepository.findById(id)
+                .doOnSuccess(dto -> LOGGER.debug("Fetched payment: {}", dto))
+                .doOnError(e -> LOGGER.error("Error fetching payment by id {}: {}", id, e.getMessage()));
     }
 
     public Mono<PaymentDto> getPaymentByTransactionReference(String transactionReference) {
+        LOGGER.debug("Fetching payment by transaction reference: {}", transactionReference);
         if (transactionReference == null || transactionReference.isBlank()) {
             return Mono.error(new IllegalArgumentException("Transaction reference is required."));
         }
-        return paymentRepository.findByTransactionReference(transactionReference.trim());
+        return paymentRepository.findByTransactionReference(transactionReference.trim())
+                .doOnSuccess(dto -> LOGGER.debug("Fetched payment by transaction reference: {}", dto))
+                .doOnError(e -> LOGGER.error("Error fetching payment by transaction reference {}: {}",
+                        transactionReference, e.getMessage()));
     }
 
     public Flux<PaymentDto> getPaymentsBySessionId(Integer sessionId) {
-        return paymentRepository.findBySessionId(sessionId);
+        LOGGER.debug("Fetching payments by session id: {}", sessionId);
+        return paymentRepository.findBySessionId(sessionId)
+                .doOnComplete(() -> LOGGER.debug("Fetched payments by session id {} successfully", sessionId))
+                .doOnError(
+                        e -> LOGGER.error("Error fetching payments by session id {}: {}", sessionId, e.getMessage()));
     }
 
+    @Transactional
     public Mono<Integer> updatePaymentStatus(Long id, PaymentStatusUpdateDto dto) {
         if (dto.status() == null || dto.status().isBlank()) {
             return Mono.error(new IllegalArgumentException("Payment status is required."));
@@ -167,7 +189,9 @@ public class PaymentService {
                                                     dto.reason(),
                                                     dto.gatewayReference()))
                                                     .thenReturn(rows)));
-                });
+                })
+                .doOnSuccess(rows -> LOGGER.info("Payment status updated successfully, rows affected: {}", rows))
+                .doOnError(e -> LOGGER.error("Error updating payment status id {}: {}", id, e.getMessage()));
     }
 
     private Mono<Void> validateTransition(String currentStatus, String nextStatus) {

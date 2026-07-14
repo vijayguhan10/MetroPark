@@ -2,6 +2,8 @@ package com.example.Metropark.payments.controller;
 
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,6 +27,8 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/pricing-rates")
 public class PricingRateController {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(PricingRateController.class);
+
         private final PricingRateService service;
 
         public PricingRateController(PricingRateService service) {
@@ -32,7 +36,9 @@ public class PricingRateController {
         }
 
         @PostMapping
+
         public Mono<ResponseEntity<String>> create(@Valid @RequestBody PricingRateDto dto) {
+                LOGGER.info("Creating pricing rate: {}", dto);
                 return service.createPricingRate(dto)
                                 .map(rows -> ResponseEntity.status(HttpStatus.CREATED)
                                                 .body("Pricing rate created successfully."))
@@ -67,7 +73,9 @@ public class PricingRateController {
         }
 
         @PutMapping("/{id}")
+
         public Mono<ResponseEntity<String>> update(@PathVariable Long id, @Valid @RequestBody PricingRateDto dto) {
+                LOGGER.info("Updating pricing rate {}: {}", id, dto);
                 return service.updatePricingRate(id, dto)
                                 .map(rows -> ResponseEntity.ok("Pricing rate updated successfully."))
                                 .onErrorResume(IllegalArgumentException.class,
@@ -78,7 +86,9 @@ public class PricingRateController {
         }
 
         @DeleteMapping("/{id}")
+
         public Mono<ResponseEntity<String>> delete(@PathVariable Long id) {
+                LOGGER.info("Deleting pricing rate: {}", id);
                 return service.deletePricingRate(id)
                                 .map(rows -> rows > 0
                                                 ? ResponseEntity.ok("Pricing rate deleted successfully.")

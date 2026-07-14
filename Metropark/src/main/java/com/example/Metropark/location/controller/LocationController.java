@@ -1,7 +1,10 @@
 package com.example.Metropark.location.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +24,8 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/locations")
 public class LocationController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocationController.class);
+
     private final LocationService service;
 
     public LocationController(LocationService service) {
@@ -28,7 +33,10 @@ public class LocationController {
     }
 
     @PostMapping
+    @Transactional
+
     public Mono<ResponseEntity<String>> create(@RequestBody LocationDto dto) {
+        LOGGER.info("Creating location: {}", dto);
         return service.createLocation(dto)
                 .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Location created successfully."));
     }
