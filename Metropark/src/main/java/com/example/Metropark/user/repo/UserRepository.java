@@ -11,6 +11,8 @@ import com.example.Metropark.user.dto.UserDto;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+
 @Repository
 public class UserRepository {
 
@@ -23,8 +25,8 @@ public class UserRepository {
     // --- NEW CREATE METHOD ---
     public Mono<Integer> createUser(UserDto userDto) {
         return Mono.from(dsl.insertInto(table("users"))
-                .columns(field("user_id"), field("email"), field("user_status"))
-                .values(userDto.userId(), userDto.email(), userDto.userStatus()));
+                .columns(field("user_id"), field("name"), field("email"), field("phone"), field("user_status"), field("created_at"))
+                .values(userDto.userId(), userDto.name(), userDto.email(), userDto.phone(), userDto.userStatus(), userDto.createdAt()));
     }
 
     public Mono<UserDto> findById(String userId) {
@@ -47,8 +49,11 @@ public class UserRepository {
     private UserDto mapToDto(Record record) {
         return new UserDto(
                 record.get("user_id", String.class),
+                record.get("name", String.class),
                 record.get("email", String.class),
-                record.get("user_status", String.class)
+                record.get("phone", String.class),
+                record.get("user_status", String.class),
+                record.get("created_at", LocalDateTime.class)
         );
     }
 }

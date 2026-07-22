@@ -28,8 +28,11 @@ public class UserService {
 
         UserDto userToSave = new UserDto(
                 generatedId,
+                userDto.name(),
                 userDto.email(),
-                userDto.userStatus() != null ? userDto.userStatus() : "ACTIVE");
+                userDto.phone(),
+                userDto.userStatus() != null ? userDto.userStatus() : "ACTIVE",
+                java.time.LocalDateTime.now());
 
         // 3. Save to database
         return userRepository.createUser(userToSave)

@@ -67,16 +67,13 @@ public class UserParkingFrequencyService {
                                                                 record.get("email", String.class),
                                                                 record.get("phone", String.class),
                                                                 record.get("totalSessions", Integer.class) != null
-                                                                                ? record.get("totalSessions",
-                                                                                                Integer.class)
+                                                                                ? record.get("totalSessions", Integer.class)
                                                                                 : 0,
-                                                                record.get("totalDurationMinutes",
-                                                                                Integer.class) != null ? record.get(
-                                                                                                "totalDurationMinutes",
-                                                                                                Integer.class) : 0,
+                                                                record.get("totalDurationMinutes", Integer.class) != null
+                                                                                ? record.get("totalDurationMinutes", Integer.class)
+                                                                                : 0,
                                                                 record.get("totalSpent", BigDecimal.class) != null
-                                                                                ? record.get("totalSpent",
-                                                                                                BigDecimal.class)
+                                                                                ? record.get("totalSpent", BigDecimal.class)
                                                                                 : BigDecimal.ZERO,
                                                                 record.get("lastParked", LocalDateTime.class)))
                                                 .stream().toList())

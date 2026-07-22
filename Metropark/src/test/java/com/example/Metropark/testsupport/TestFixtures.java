@@ -83,7 +83,11 @@ public final class TestFixtures {
     }
 
     public static UserDto userDto() {
-        return new UserDto("USR-1001", "user@example.com", "ACTIVE");
+        return new UserDto("USR-1001", "Test User", "user@example.com", "+91-9876543210", "ACTIVE", java.time.LocalDateTime.of(2024, 1, 15, 10, 30));
+    }
+
+    public static UserDto rajeshKumarUserDto() {
+        return new UserDto("USR-001", "Rajesh Kumar", "rajesh.kumar@email.com", "+91-9876543210", "ACTIVE", java.time.LocalDateTime.of(2023, 5, 10, 0, 0));
     }
 
     public static PaymentMethodDto paymentMethodDto() {
