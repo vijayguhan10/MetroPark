@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.Metropark.vehicle.dto.VehicleDto;
+import com.example.Metropark.vehicle.dto.VehicleResponseDto;
 import com.example.Metropark.vehicle.repo.VehicleRepository;
 
 import reactor.core.publisher.Flux;
@@ -52,15 +53,14 @@ public class VehicleService {
                 dto.color() != null ? dto.color().trim() : null,
                 isActive,
                 now,
-                now
-        );
+                now);
 
         return repository.create(cleanDto)
                 .doOnSuccess(rows -> LOGGER.info("Vehicle registered successfully, rows affected: {}", rows))
                 .doOnError(e -> LOGGER.error("Error registering vehicle: {}", e.getMessage()));
     }
 
-    public Flux<VehicleDto> getAllVehicles() {
+    public Flux<VehicleResponseDto> getAllVehicles() {
         LOGGER.debug("Fetching all vehicles");
         return repository.findAll()
                 .doOnComplete(() -> LOGGER.debug("Fetched all vehicles successfully"))
@@ -80,7 +80,7 @@ public class VehicleService {
         if (isActive == null) {
             return Mono.error(new IllegalArgumentException("Status (isActive) must be true or false."));
         }
-        
+
         return repository.updateActiveStatus(id, isActive)
                 .flatMap(rowsUpdated -> {
                     if (rowsUpdated == 0) {

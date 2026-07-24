@@ -1,11 +1,13 @@
 package com.example.Metropark.BFF.controller;
 
-import com.example.Metropark.BFF.dto.UserParkingFrequencyDto;
-import com.example.Metropark.BFF.service.UserParkingFrequencyService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.example.Metropark.BFF.dto.UserParkingFrequencyDto;
+import com.example.Metropark.BFF.service.UserParkingFrequencyService;
+
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -24,29 +26,29 @@ public class UserParkingFrequencyController {
      * 
      * Sample Response:
      * {
-     *   "sessions": [
-     *     {
-     *       "userId": "USR-001",
-     *       "name": "Rajesh Kumar",
-     *       "email": "rajesh.kumar@email.com",
-     *       "phone": "+91-9876543210",
-     *       "totalSessions": 2,
-     *       "totalDurationMinutes": 525,
-     *       "totalSpent": 437.50,
-     *       "lastParked": "2024-01-15T18:15:00"
-     *     },
-     *     ...
-     *   ],
-     *   "allUsersDetail": [
-     *     {
-     *       "userId": "USR-001",
-     *       "name": "Rajesh Kumar",
-     *       "email": "rajesh.kumar@email.com",
-     *       "phone": "+91-9876543210",
-     *       "joinedDate": "2023-05-10T00:00:00"
-     *     },
-     *     ...
-     *   ]
+     * "sessions": [
+     * {
+     * "userId": "USR-001",
+     * "name": "Rajesh Kumar",
+     * "email": "user@example.com",
+     * "phone": "+91-9876543210",
+     * "totalSessions": 2,
+     * "totalDurationMinutes": 525,
+     * "totalSpent": 437.50,
+     * "lastParked": "2024-01-15T18:15:00"
+     * },
+     * ...
+     * ],
+     * "allUsersDetail": [
+     * {
+     * "userId": "USR-001",
+     * "name": "Rajesh Kumar",
+     * "email": "user@example.com",
+     * "phone": "+91-9876543210",
+     * "joinedDate": "2023-05-10T00:00:00"
+     * },
+     * ...
+     * ]
      * }
      */
     @GetMapping
@@ -62,17 +64,17 @@ public class UserParkingFrequencyController {
      * 
      * Sample Response:
      * [
-     *   {
-     *     "userId": "USR-001",
-     *     "name": "Rajesh Kumar",
-     *     "email": "rajesh.kumar@email.com",
-     *     "phone": "+91-9876543210",
-     *     "totalSessions": 2,
-     *     "totalDurationMinutes": 525,
-     *     "totalSpent": 437.50,
-     *     "lastParked": "2024-01-15T18:15:00"
-     *   },
-     *   ...
+     * {
+     * "userId": "USR-001",
+     * "name": "Rajesh Kumar",
+     * "email": "user@example.com",
+     * "phone": "+91-9876543210",
+     * "totalSessions": 2,
+     * "totalDurationMinutes": 525,
+     * "totalSpent": 437.50,
+     * "lastParked": "2024-01-15T18:15:00"
+     * },
+     * ...
      * ]
      */
     @GetMapping("/sessions")
@@ -88,14 +90,14 @@ public class UserParkingFrequencyController {
      * 
      * Sample Response:
      * [
-     *   {
-     *     "userId": "USR-001",
-     *     "name": "Rajesh Kumar",
-     *     "email": "rajesh.kumar@email.com",
-     *     "phone": "+91-9876543210",
-     *     "joinedDate": "2023-05-10T00:00:00"
-     *   },
-     *   ...
+     * {
+     * "userId": "USR-001",
+     * "name": "Rajesh Kumar",
+     * "email": "user@example.com",
+     * "phone": "+91-9876543210",
+     * "joinedDate": "2023-05-10T00:00:00"
+     * },
+     * ...
      * ]
      */
     @GetMapping("/users")

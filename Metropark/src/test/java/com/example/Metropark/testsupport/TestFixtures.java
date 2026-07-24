@@ -67,7 +67,8 @@ public final class TestFixtures {
     }
 
     public static ReservationDto reservationDto() {
-        return new ReservationDto(1, 1001, 5, null, "RESERVED", 1, FIXED_TIME, FIXED_TIME.plusMinutes(30), FIXED_TIME, FIXED_TIME);
+        return new ReservationDto(1, 1001, 5, null, "RESERVED", 1, FIXED_TIME, FIXED_TIME.plusMinutes(30), FIXED_TIME,
+                FIXED_TIME);
     }
 
     public static ReservationClassDto reservationClassDto() {
@@ -83,11 +84,13 @@ public final class TestFixtures {
     }
 
     public static UserDto userDto() {
-        return new UserDto("USR-1001", "Test User", "user@example.com", "+91-9876543210", "ACTIVE", java.time.LocalDateTime.of(2024, 1, 15, 10, 30));
+        return new UserDto("USR-1001", "Test User", "user@example.com", "+91-9876543210", "ACTIVE",
+                java.time.LocalDateTime.of(2024, 1, 15, 10, 30));
     }
 
     public static UserDto rajeshKumarUserDto() {
-        return new UserDto("USR-001", "Rajesh Kumar", "rajesh.kumar@email.com", "+91-9876543210", "ACTIVE", java.time.LocalDateTime.of(2023, 5, 10, 0, 0));
+        return new UserDto("USR-001", "Rajesh Kumar", "user@example.com", "+91-9876543210", "ACTIVE",
+                java.time.LocalDateTime.of(2023, 5, 10, 0, 0));
     }
 
     public static PaymentMethodDto paymentMethodDto() {
