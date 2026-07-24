@@ -2,15 +2,14 @@ package com.example.Metropark.user.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.example.Metropark.user.dto.UserDto;
@@ -29,7 +28,8 @@ class UserServiceTest {
 
     @Test
     void createUserGeneratesIdAndDefaultsStatus() {
-        UserDto input = new UserDto(null, "user@example.com", null);
+        UserDto input = new UserDto("USR-001", "Rajesh Kumar", "user@example.com", "+91-9876543210", "ACTIVE",
+                java.time.LocalDateTime.of(2023, 5, 10, 0, 0));
         when(userRepository.createUser(any())).thenReturn(Mono.just(1));
 
         Integer rows = service.createUser(input).block();

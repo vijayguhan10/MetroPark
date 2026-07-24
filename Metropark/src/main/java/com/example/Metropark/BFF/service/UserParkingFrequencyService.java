@@ -1,20 +1,22 @@
 package com.example.Metropark.BFF.service;
 
-import com.example.Metropark.BFF.dto.UserParkingFrequencyDto;
-import org.jooq.DSLContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.jooq.DSLContext;
 import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.sum;
 import static org.jooq.impl.DSL.table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.example.Metropark.BFF.dto.UserParkingFrequencyDto;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 public class UserParkingFrequencyService {
@@ -39,7 +41,7 @@ public class UserParkingFrequencyService {
         }
 
         public Mono<List<UserParkingFrequencyDto.UserParkingFrequencySummaryDto>> getUserParkingSessions() {
-                return Mono.from(dsl.select(
+                return Flux.from(dsl.select(
                                 field("u.user_id").as("userId"),
                                 field("u.name").as("name"),
                                 field("u.email").as("email"),
@@ -60,32 +62,28 @@ public class UserParkingFrequencyService {
                                                 field("u.email"),
                                                 field("u.phone"))
                                 .orderBy(field("lastParked").desc()))
-                                .map(records -> records.map(
-                                                record -> new UserParkingFrequencyDto.UserParkingFrequencySummaryDto(
-                                                                record.get("userId", String.class),
-                                                                record.get("name", String.class),
-                                                                record.get("email", String.class),
-                                                                record.get("phone", String.class),
-                                                                record.get("totalSessions", Integer.class) != null
-                                                                                ? record.get("totalSessions",
-                                                                                                Integer.class)
-                                                                                : 0,
-                                                                record.get("totalDurationMinutes",
-                                                                                Integer.class) != null ? record.get(
-                                                                                                "totalDurationMinutes",
-                                                                                                Integer.class) : 0,
-                                                                record.get("totalSpent", BigDecimal.class) != null
-                                                                                ? record.get("totalSpent",
-                                                                                                BigDecimal.class)
-                                                                                : BigDecimal.ZERO,
-                                                                record.get("lastParked", LocalDateTime.class)))
-                                                .stream().toList())
+                                .map(record -> new UserParkingFrequencyDto.UserParkingFrequencySummaryDto(
+                                                record.get("userId", String.class),
+                                                record.get("name", String.class),
+                                                record.get("email", String.class),
+                                                record.get("phone", String.class),
+                                                record.get("totalSessions", Integer.class) != null
+                                                                ? record.get("totalSessions", Integer.class)
+                                                                : 0,
+                                                record.get("totalDurationMinutes", Integer.class) != null
+                                                                ? record.get("totalDurationMinutes", Integer.class)
+                                                                : 0,
+                                                record.get("totalSpent", BigDecimal.class) != null
+                                                                ? record.get("totalSpent", BigDecimal.class)
+                                                                : BigDecimal.ZERO,
+                                                record.get("lastParked", LocalDateTime.class)))
+                                .collectList()
                                 .defaultIfEmpty(List.of())
                                 .onErrorReturn(List.of());
         }
 
         public Mono<List<UserParkingFrequencyDto.AllUsersDetailDto>> getAllUsersDetail() {
-                return Mono.from(dsl.select(
+                return Flux.from(dsl.select(
                                 field("u.user_id").as("userId"),
                                 field("u.name").as("name"),
                                 field("u.email").as("email"),
@@ -93,12 +91,13 @@ public class UserParkingFrequencyService {
                                 field("u.created_at").as("joinedDate"))
                                 .from(table("users").as("u"))
                                 .orderBy(field("u.created_at").desc()))
-                                .map(records -> records.map(record -> new UserParkingFrequencyDto.AllUsersDetailDto(
+                                .map(record -> new UserParkingFrequencyDto.AllUsersDetailDto(
                                                 record.get("userId", String.class),
                                                 record.get("name", String.class),
                                                 record.get("email", String.class),
                                                 record.get("phone", String.class),
-                                                record.get("joinedDate", LocalDateTime.class))).stream().toList())
+                                                record.get("joinedDate", LocalDateTime.class)))
+                                .collectList()
                                 .defaultIfEmpty(List.of())
                                 .onErrorReturn(List.of());
         }

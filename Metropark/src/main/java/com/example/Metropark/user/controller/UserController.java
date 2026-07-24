@@ -29,8 +29,8 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<ResponseEntity<String>> createUser(@RequestBody UserDto userDto) {
-        userService.createUser(userDto);
-        return Mono.just(ResponseEntity.status(HttpStatus.CREATED).body("User created successfully."));
+        return userService.createUser(userDto)
+                .map(savedUser -> ResponseEntity.status(HttpStatus.CREATED).body("User created successfully."));
     }
 
     @GetMapping
