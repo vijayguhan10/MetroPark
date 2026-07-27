@@ -7,6 +7,7 @@ import com.example.Metropark.gate.dto.GateDto;
 import com.example.Metropark.location.dto.LocationDto;
 import com.example.Metropark.location.dto.LocationTypeDto;
 import com.example.Metropark.parking.dto.ParkingSessionDto;
+import com.example.Metropark.parking.dto.ParkingSessionResponseDto;
 import com.example.Metropark.parking.dto.ParkingSlotDto;
 import com.example.Metropark.payments.dto.PaymentDto;
 import com.example.Metropark.payments.dto.PaymentMethodDto;
@@ -54,6 +55,33 @@ public final class TestFixtures {
                 "USR-1001",
                 20,
                 3,
+                null,
+                "CREATED",
+                FIXED_TIME,
+                null,
+                FIXED_TIME.plusHours(2),
+                120,
+                "PENDING",
+                1,
+                FIXED_TIME,
+                FIXED_TIME);
+    }
+
+    public static ParkingSessionResponseDto parkingSessionResponseDto() {
+        return new ParkingSessionResponseDto(
+                1,
+                10,
+                5,
+                "A-01",
+                "LOC-1",
+                "Central Lot",
+                "USR-1001",
+                "Test User",
+                20,
+                "ABC123",
+                3,
+                "North Gate",
+                null,
                 null,
                 "CREATED",
                 FIXED_TIME,

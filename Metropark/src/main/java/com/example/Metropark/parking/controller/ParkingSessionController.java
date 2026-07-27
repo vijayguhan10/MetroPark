@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.Metropark.parking.dto.ParkingSessionDto;
+import com.example.Metropark.parking.dto.ParkingSessionResponseDto;
 import com.example.Metropark.parking.service.ParkingSessionService;
 
 import reactor.core.publisher.Flux;
@@ -32,7 +33,7 @@ public class ParkingSessionController {
     }
 
     @PostMapping
-     
+
     public Mono<ResponseEntity<String>> create(@RequestBody ParkingSessionDto dto) {
         LOGGER.info("Creating parking session: {}", dto);
         return service.createSession(dto)
@@ -42,8 +43,8 @@ public class ParkingSessionController {
     }
 
     @GetMapping
-    public Flux<ParkingSessionDto> getAll() {
-        return service.getAllSessions();
+    public Flux<ParkingSessionResponseDto> getAll() {
+        return service.getAllSessionsWithDetails();
     }
 
     @GetMapping("/{id}")

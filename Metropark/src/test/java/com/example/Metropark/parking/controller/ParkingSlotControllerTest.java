@@ -34,19 +34,19 @@ class ParkingSlotControllerTest {
     }
 
     @Test
-    void createParkingSlotReturnsCreatedMessage() {
-        when(service.createSlot(any())).thenReturn(Mono.just(1));
+    void createParkingSlotsReturnsCreatedMessage() {
+        when(service.createSlots(any())).thenReturn(Mono.just(2));
 
         String response = webTestClient.post()
                 .uri("/api/parking-slots")
-                .bodyValue(TestFixtures.parkingSlotDto())
+                .bodyValue(List.of(TestFixtures.parkingSlotDto(), TestFixtures.parkingSlotDto()))
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(String.class)
                 .returnResult()
                 .getResponseBody();
 
-        assertEquals("Parking slot registered successfully.", response);
+        assertEquals("2 parking slots registered successfully.", response);
     }
 
     @Test
