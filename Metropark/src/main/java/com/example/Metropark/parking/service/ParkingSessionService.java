@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.Metropark.parking.dto.ParkingSessionDto;
+import com.example.Metropark.parking.dto.ParkingSessionResponseDto;
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.reservation.repo.ReservationRepository;
@@ -147,6 +148,25 @@ public class ParkingSessionService {
                 return sessionRepository.findById(id)
                                 .doOnSuccess(dto -> LOGGER.debug("Fetched parking session: {}", dto))
                                 .doOnError(e -> LOGGER.error("Error fetching parking session by id {}: {}", id,
+                                                e.getMessage()));
+        }
+
+        // New methods with joined foreign key data
+        public Flux<ParkingSessionResponseDto> getAllSessionsWithDetails() {
+                LOGGER.debug("Fetching all parking sessions with details");
+                return sessionRepository.findAllWithDetails()
+                                .doOnComplete(() -> LOGGER
+                                                .debug("Fetched all parking sessions with details successfully"))
+                                .doOnError(e -> LOGGER.error("Error fetching all parking sessions with details: {}",
+                                                e.getMessage()));
+        }
+
+        public Mono<ParkingSessionResponseDto> getSessionByIdWithDetails(Integer id) {
+                LOGGER.debug("Fetching parking session by id with details: {}", id);
+                return sessionRepository.findByIdWithDetails(id)
+                                .doOnSuccess(dto -> LOGGER.debug("Fetched parking session with details: {}", dto))
+                                .doOnError(e -> LOGGER.error("Error fetching parking session by id {} with details: {}",
+                                                id,
                                                 e.getMessage()));
         }
 

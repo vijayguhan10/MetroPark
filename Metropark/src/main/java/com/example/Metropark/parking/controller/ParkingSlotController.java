@@ -18,6 +18,8 @@ import com.example.Metropark.parking.service.ParkingSlotService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/parking-slots")
 public class ParkingSlotController {
@@ -32,11 +34,10 @@ public class ParkingSlotController {
 
     @PostMapping
     @Transactional
-
-    public Mono<ResponseEntity<String>> create(@RequestBody ParkingSlotDto dto) {
-        LOGGER.info("Creating parking slot: {}", dto);
-        return service.createSlot(dto)
-                .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Parking slot registered successfully."))
+    public Mono<ResponseEntity<String>> create(@RequestBody List<ParkingSlotDto> dtos) {
+        LOGGER.info("Creating {} parking slots", dtos.size());
+        return service.createSlots(dtos)
+                .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body(rows + " parking slots registered successfully."))
                 .onErrorResume(IllegalArgumentException.class,
                         e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }

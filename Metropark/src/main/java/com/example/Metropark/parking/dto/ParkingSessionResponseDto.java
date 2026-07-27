@@ -10,6 +10,7 @@ public record ParkingSessionResponseDto(
     @JsonProperty("slotId") Integer slotId,
     @JsonProperty("slotDisplayCode") String slotDisplayCode, // From parking_slots
     @JsonProperty("locationId") String locationId, // From parking_slots
+    @JsonProperty("locationName") String locationName, // From locations
     @JsonProperty("userId") String userId,
     @JsonProperty("userName") String userName, // From users
     @JsonProperty("vehicleId") Integer vehicleId,

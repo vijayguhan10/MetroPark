@@ -11,6 +11,8 @@ import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Service
 public class ParkingSlotService {
 
@@ -45,6 +47,28 @@ public class ParkingSlotService {
         return repository.create(cleanDto)
                 .doOnSuccess(rows -> LOGGER.info("Parking slot created successfully, rows affected: {}", rows))
                 .doOnError(e -> LOGGER.error("Error creating parking slot: {}", e.getMessage()));
+    }
+
+    @Transactional
+    public Mono<Integer> createSlots(List<ParkingSlotDto> dtos) {
+        LOGGER.info("Creating {} parking slots", dtos.size());
+        if (dtos == null || dtos.isEmpty()) {
+            return Mono.error(new IllegalArgumentException("Parking slots list cannot be empty."));
+        }
+
+        // Validate all slots first
+        for (ParkingSlotDto dto : dtos) {
+            if (dto.locationId() == null || dto.displayCode() == null || dto.sensorId() == null) {
+                return Mono.error(new IllegalArgumentException("Location ID, Display Code, and Sensor ID are required for all slots."));
+            }
+        }
+
+        // Create all slots sequentially
+        return Flux.fromIterable(dtos)
+                .flatMap(this::createSlot)
+                .reduce(0, Integer::sum)
+                .doOnSuccess(total -> LOGGER.info("Total parking slots created: {}", total))
+                .doOnError(e -> LOGGER.error("Error creating parking slots: {}", e.getMessage()));
     }
 
     public Flux<ParkingSlotDto> getAllSlots() {

@@ -27,7 +27,7 @@ class GateControllerTest {
     private GateService gateService;
 
     private WebTestClient webTestClient;
-
+    
     @BeforeEach
     void setUp() {
         webTestClient = WebTestClient.bindToController(new GateController(gateService)).build();
