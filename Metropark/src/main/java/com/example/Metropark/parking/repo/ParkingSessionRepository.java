@@ -79,14 +79,18 @@ public class ParkingSessionRepository {
                                 field("ps.updated_at").as("updatedAt"))
                                 .from(table("parking_sessions").as("ps"))
                                 .join(table("parking_slots").as("psl")).on(field("ps.slot_id").eq(field("psl.slot_id")))
-                                .join(table("locations").as("loc")).on(field("psl.location_id").eq(field("loc.location_id")))
+                                .join(table("locations").as("loc"))
+                                .on(field("psl.location_id").eq(field("loc.location_id")))
                                 .join(table("users").as("u")).on(field("ps.user_id").eq(field("u.user_id")))
                                 .join(table("vehicles").as("v")).on(field("ps.vehicle_id").eq(field("v.vehicle_id")))
                                 .leftJoin(table("gates").as("eg")).on(field("ps.entry_gate_id").eq(field("eg.gate_id")))
                                 .leftJoin(table("gates").as("xg")).on(field("ps.exit_gate_id").eq(field("xg.gate_id")));
 
                 return Flux.from(query)
-                                .map(record -> record.into(ParkingSessionResponseDto.class));
+                                .map(record -> {
+                                        // System.out.println("Mapping record to ParkingSessionResponseDto: " + record);
+                                        return record.into(ParkingSessionResponseDto.class);
+                                });
         }
 
         public Mono<ParkingSessionResponseDto> findByIdWithDetails(Integer sessionId) {
@@ -117,7 +121,8 @@ public class ParkingSessionRepository {
                                 field("ps.updated_at").as("updatedAt"))
                                 .from(table("parking_sessions").as("ps"))
                                 .join(table("parking_slots").as("psl")).on(field("ps.slot_id").eq(field("psl.slot_id")))
-                                .join(table("locations").as("loc")).on(field("psl.location_id").eq(field("loc.location_id")))
+                                .join(table("locations").as("loc"))
+                                .on(field("psl.location_id").eq(field("loc.location_id")))
                                 .join(table("users").as("u")).on(field("ps.user_id").eq(field("u.user_id")))
                                 .join(table("vehicles").as("v")).on(field("ps.vehicle_id").eq(field("v.vehicle_id")))
                                 .leftJoin(table("gates").as("eg")).on(field("ps.entry_gate_id").eq(field("eg.gate_id")))
