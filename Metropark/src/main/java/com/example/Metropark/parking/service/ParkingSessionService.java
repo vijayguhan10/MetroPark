@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.Metropark.BFF.dto.ActiveSessionDto;
 import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSessionResponseDto;
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
@@ -34,7 +35,8 @@ public class ParkingSessionService {
                         VehicleRepository vehicleRepository,
                         ParkingSlotRepository slotRepository,
                         ReservationRepository reservationRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository
+                         ) {
 
                 this.sessionRepository = sessionRepository;
                 this.vehicleRepository = vehicleRepository;
@@ -126,9 +128,12 @@ public class ParkingSessionService {
                                                         now);
 
                                         return sessionRepository.create(session)
-                                                        .doOnSuccess(rows -> LOGGER.info(
-                                                                        "Parking session created successfully, rows affected: {}",
-                                                                        rows))
+                                                        .doOnSuccess(rows -> {
+                                                                LOGGER.info(
+                                                                                "Parking session created successfully, rows affected: {}",
+                                                                                rows);
+                                                                // Broadcast session creation via WebSocket
+                                                        })
                                                         .doOnError(e -> LOGGER.error(
                                                                         "Error creating parking session: {}",
                                                                         e.getMessage()));
@@ -187,13 +192,36 @@ public class ParkingSessionService {
                                                 id,
                                                 status.trim().toUpperCase(),
                                                 currentVersion)
-                                .flatMap(rowsUpdated -> rowsUpdated > 0
-                                                ? Mono.just(rowsUpdated)
-                                                : Mono.error(new IllegalStateException(
-                                                                "Concurrency conflict or session not found.")))
+                                .flatMap(rowsUpdated -> {
+                                        if (rowsUpdated > 0) {
+                                                // Broadcast session update via WebSocket
+                                                broadcastSessionUpdated(id, status.trim().toUpperCase());
+                                                return Mono.just(rowsUpdated);
+                                        } else {
+                                                return Mono.error(new IllegalStateException(
+                                                                "Concurrency conflict or session not found."));
+                                        }
+                                })
                                 .doOnSuccess(rows -> LOGGER.info(
                                                 "Parking session status updated successfully, rows affected: {}", rows))
                                 .doOnError(e -> LOGGER.error("Error updating parking session status id {}: {}", id,
                                                 e.getMessage()));
+        }
+
+        private void broadcastSessionUpdated(Integer sessionId, String newStatus) {
+                sessionRepository.findByIdWithDetails(sessionId)
+                                .subscribe(responseDto -> {
+                                        if (responseDto != null) {
+                                                ActiveSessionDto activeSession = new ActiveSessionDto(
+                                                                "#SN-" + responseDto.sessionId(),
+                                                                responseDto.vehicleNumber(),
+                                                                responseDto.vehicleNumber(),
+                                                                responseDto.slotDisplayCode(),
+                                                                newStatus,
+                                                                responseDto.actualEntryTime(),
+                                                                responseDto.durationMinutes());
+                                                ;
+                                        }
+                                });
         }
 }
