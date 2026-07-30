@@ -27,6 +27,7 @@ import com.example.Metropark.location.repo.LocationRepository;
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -73,7 +74,7 @@ public class AdminDashboardService {
                                                                 LocalDateTime.now()));
         }
 
-        private Mono<DashboardSummaryDto> getSummary() {
+        public Mono<DashboardSummaryDto> getSummary() {
                 return Mono.zip(
                                 slotRepository.findAll().count(),
                                 slotRepository.findAll()
@@ -103,12 +104,19 @@ public class AdminDashboardService {
                                 });
         }
 
-        private Mono<List<ActiveSessionDto>> getActiveSessions() {
+        public Mono<List<ActiveSessionDto>> getActiveSessions() {
                 return sessionRepository.findAll()
                                 .filter(session -> "ACTIVE".equalsIgnoreCase(session.sessionStatus())
                                                 || "CREATED".equalsIgnoreCase(session.sessionStatus()))
                                 .flatMap(session -> enrichSession(session))
                                 .collectList();
+        }
+
+        public Flux<ActiveSessionDto> getActiveSessionsFlux() {
+                return sessionRepository.findAll()
+                                .filter(session -> "ACTIVE".equalsIgnoreCase(session.sessionStatus())
+                                                || "CREATED".equalsIgnoreCase(session.sessionStatus()))
+                                .flatMap(session -> enrichSession(session));
         }
 
         private Mono<ActiveSessionDto> enrichSession(com.example.Metropark.parking.dto.ParkingSessionDto session) {
@@ -159,7 +167,7 @@ public class AdminDashboardService {
                                 .defaultIfEmpty("Unknown");
         }
 
-        private Mono<List<OccupancyByLocationDto>> getOccupancyByLocation() {
+        public Mono<List<OccupancyByLocationDto>> getOccupancyByLocation() {
                 return locationRepository.findAll()
                                 .flatMap(location -> Mono.zip(
                                                 Mono.just(location),
@@ -192,7 +200,7 @@ public class AdminDashboardService {
                                 .collectList();
         }
 
-        private Mono<List<AlertDto>> getAlerts() {
+        public Mono<List<AlertDto>> getAlerts() {
                 // For now, return mock alerts since there's no alerts table
                 // In production, this would query an alerts table
                 return Mono.just(List.of(
@@ -226,7 +234,7 @@ public class AdminDashboardService {
                 return getAlerts().map(alerts -> alerts.size());
         }
 
-        private Mono<RevenueDto> getRevenueToday() {
+        public Mono<RevenueDto> getRevenueToday() {
                 LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
                 LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
@@ -250,7 +258,7 @@ public class AdminDashboardService {
                                 .onErrorReturn(new RevenueDto(BigDecimal.ZERO, "INR", 0L, "TODAY"));
         }
 
-        private Mono<List<GateStatusDto>> getGateStatuses() {
+        public Mono<List<GateStatusDto>> getGateStatuses() {
                 return gateRepository.findAll()
                                 .map(gate -> new GateStatusDto(
                                                 gate.gateId(),
@@ -259,5 +267,15 @@ public class AdminDashboardService {
                                                 gate.status(),
                                                 gate.locationId()))
                                 .collectList();
+        }
+
+        public Flux<GateStatusDto> getGateStatusesFlux() {
+                return gateRepository.findAll()
+                                .map(gate -> new GateStatusDto(
+                                                gate.gateId(),
+                                                gate.gateName(),
+                                                gate.gateType(),
+                                                gate.status(),
+                                                gate.locationId()));
         }
 }
