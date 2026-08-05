@@ -75,6 +75,32 @@ public class VehicleRepository {
         return Mono.from(query).map(record -> record.into(VehicleDto.class));
     }
 
+    public Flux<VehicleResponseDto> findByUserId(String userId) {
+
+        var query = dsl.select(
+                field("vehicles.vehicle_id", Integer.class).as("vehicle_id"),
+                field("vehicles.user_id", String.class).as("user_id"),
+                field("users.name", String.class).as("user_name"),
+                field("vehicles.vehicle_number", String.class).as("vehicle_number"),
+                field("vehicles.vehicle_type_id", Integer.class).as("vehicle_type_id"),
+                field("vehicle_types.type_display_name", String.class).as("vehicle_type_name"),
+                field("vehicles.brand", String.class).as("brand"),
+                field("vehicles.model", String.class).as("model"),
+                field("vehicles.color", String.class).as("color"),
+                field("vehicles.is_active", Boolean.class).as("is_active"),
+                field("vehicles.created_at", LocalDateTime.class).as("created_at"),
+                field("vehicles.updated_at", LocalDateTime.class).as("updated_at"))
+                .from(table("vehicles"))
+                .leftJoin(table("vehicle_types"))
+                .on(field("vehicles.vehicle_type_id").eq(field("vehicle_types.vehicle_type_id")))
+                .leftJoin(table("users"))
+                .on(field("vehicles.user_id").eq(field("users.user_id")))
+                .where(field("vehicles.user_id").eq(userId));
+
+        return Flux.from(query)
+                .map(record -> record.into(VehicleResponseDto.class));
+    }
+
     public Mono<Integer> updateActiveStatus(Integer id, Boolean isActive) {
         return Mono.from(dsl.update(table("vehicles"))
                 .set(field("is_active"), isActive)

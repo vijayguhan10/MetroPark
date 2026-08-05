@@ -3,15 +3,14 @@ package com.example.Metropark.reservation.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
@@ -34,7 +33,7 @@ class ReservationServiceTest {
 
     @Test
     void createReservationReservesSlotAndSavesReservation() {
-        ReservationDto input = new ReservationDto(null, 1001, 5, null, null, null, null, null, null, null);
+        ReservationDto input = new ReservationDto(null, "USR-1494", 5, null, null, null, null, null, null, null);
         when(parkingSlotRepository.reserveSlot(5)).thenReturn(Mono.just(1));
         when(reservationRepository.create(any())).thenReturn(Mono.just(1));
 
@@ -45,7 +44,7 @@ class ReservationServiceTest {
         verify(reservationRepository).create(captor.capture());
 
         ReservationDto saved = captor.getValue();
-        assertEquals(1001, saved.userId());
+        assertEquals("USR-1494", saved.userId());
         assertEquals(5, saved.slotId());
         assertEquals("RESERVED", saved.reservationStatus());
         assertEquals(1, saved.reservationVersion());
@@ -67,7 +66,7 @@ class ReservationServiceTest {
 
     @Test
     void createReservationFailsWhenSlotCannotBeReserved() {
-        ReservationDto input = new ReservationDto(null, 1001, 5, null, null, null, null, null, null, null);
+        ReservationDto input = new ReservationDto(null, "USR-1494", 5, null, null, null, null, null, null, null);
         when(parkingSlotRepository.reserveSlot(5)).thenReturn(Mono.just(0));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,

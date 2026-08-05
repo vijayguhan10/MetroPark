@@ -10,13 +10,11 @@ public record UserBusinessProfileDto(
                 String phone,
                 LocalDateTime joinedDate,
 
-                // Aggregated Usage Data
                 int totalSessions,
                 int totalDurationMinutes,
                 BigDecimal totalLifetimeValue, // Total money they have spent
                 LocalDateTime lastParked,
 
-                // Calculated Business Insights (Calculated in the Service)
                 BigDecimal averageSpendPerSession,
                 String customerSegment // "VIP", "REGULAR", "AT_RISK", "INACTIVE"
 ) {

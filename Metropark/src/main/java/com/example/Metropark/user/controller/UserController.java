@@ -30,7 +30,9 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<ResponseEntity<String>> createUser(@RequestBody UserDto userDto) {
         return userService.createUser(userDto)
-                .map(savedUser -> ResponseEntity.status(HttpStatus.CREATED).body("User created successfully."));
+                .map(userId -> ResponseEntity
+                        .status(HttpStatus.CREATED)
+                        .body(userId));
     }
 
     @GetMapping

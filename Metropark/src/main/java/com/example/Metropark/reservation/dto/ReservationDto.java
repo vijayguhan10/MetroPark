@@ -1,11 +1,12 @@
 package com.example.Metropark.reservation.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record ReservationDto(
     @JsonProperty("reservationId") Integer reservationId,
-    @JsonProperty("userId") Integer userId,
+    @JsonProperty("userId") String userId,
     @JsonProperty("slotId") Integer slotId,
     @JsonProperty("queueEntryId") Integer queueEntryId,
     @JsonProperty("reservationStatus") String reservationStatus,

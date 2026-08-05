@@ -35,7 +35,6 @@ public class VehicleService {
             return Mono.error(new IllegalArgumentException("Vehicle registration number is required."));
         }
 
-        // Robust Data Sanitization: Remove ALL spaces, hyphens, and make uppercase
         String cleanVehicleNumber = dto.vehicleNumber()
                 .replaceAll("[\\s\\-]", "")
                 .toUpperCase();
@@ -72,6 +71,20 @@ public class VehicleService {
         return repository.findById(id)
                 .doOnSuccess(dto -> LOGGER.debug("Fetched vehicle: {}", dto))
                 .doOnError(e -> LOGGER.error("Error fetching vehicle by id {}: {}", id, e.getMessage()));
+    }
+
+    public Flux<VehicleResponseDto> getVehiclesByUserId(String userId) {
+
+        LOGGER.info("Fetching vehicles for user: {}", userId);
+
+        return repository.findByUserId(userId)
+                .switchIfEmpty(Flux.error(
+                        new IllegalArgumentException(
+                                "No vehicles found for user: " + userId)))
+                .doOnComplete(() -> LOGGER.info("Vehicles fetched successfully for user: {}", userId))
+                .doOnError(error -> LOGGER.error("Error fetching vehicles for user {}",
+                        userId,
+                        error));
     }
 
     @Transactional

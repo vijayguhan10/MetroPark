@@ -1,15 +1,14 @@
 package com.example.Metropark.user.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mock;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -35,7 +34,7 @@ class UserControllerTest {
 
     @Test
     void createUserReturnsCreatedMessage() {
-        when(userService.createUser(any())).thenReturn(Mono.just(1));
+        when(userService.createUser(any())).thenReturn(Mono.just("USR-1001"));
 
         String response = webTestClient.post()
                 .uri("/api/users")
@@ -46,7 +45,7 @@ class UserControllerTest {
                 .returnResult()
                 .getResponseBody();
 
-        assertEquals("User created successfully.", response);
+        assertEquals("USR-1001", response);
     }
 
     @Test

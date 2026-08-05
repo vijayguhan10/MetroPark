@@ -53,7 +53,7 @@ public class ParkingSessionRepository {
 
         public Flux<ParkingSessionResponseDto> findAllWithDetails() {
                 var query = dsl.select(
-                                // ORDER MUST MATCH THE RECORD DTO EXACTLY
+
                                 field("ps.session_id").as("sessionId"),
                                 field("ps.reservation_id").as("reservationId"),
                                 field("ps.slot_id").as("slotId"),
@@ -88,14 +88,14 @@ public class ParkingSessionRepository {
 
                 return Flux.from(query)
                                 .map(record -> {
-                                        // System.out.println("Mapping record to ParkingSessionResponseDto: " + record);
+
                                         return record.into(ParkingSessionResponseDto.class);
                                 });
         }
 
         public Mono<ParkingSessionResponseDto> findByIdWithDetails(Integer sessionId) {
                 var query = dsl.select(
-                                // ORDER MUST MATCH THE RECORD DTO EXACTLY
+
                                 field("ps.session_id").as("sessionId"),
                                 field("ps.reservation_id").as("reservationId"),
                                 field("ps.slot_id").as("slotId"),

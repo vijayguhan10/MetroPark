@@ -12,7 +12,7 @@ public class JooqR2dbcConfig {
 
     @Bean
     public DSLContext dslContext(ConnectionFactory connectionFactory) {
-        // Initializes jOOQ to execute queries reactively via R2DBC
+
         return DSL.using(connectionFactory, SQLDialect.POSTGRES);
     }
 }

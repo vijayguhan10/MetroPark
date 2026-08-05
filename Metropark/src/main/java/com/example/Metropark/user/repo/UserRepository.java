@@ -22,7 +22,6 @@ public class UserRepository {
         this.dsl = dsl;
     }
 
-    // --- NEW CREATE METHOD ---
     public Mono<Integer> createUser(UserDto userDto) {
         return Mono.from(dsl.insertInto(table("users"))
                 .columns(field("user_id"), field("name"), field("email"), field("phone"), field("user_status"), field("created_at"))

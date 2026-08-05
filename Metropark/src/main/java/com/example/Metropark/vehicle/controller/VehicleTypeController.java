@@ -31,7 +31,7 @@ public class VehicleTypeController {
     public Mono<ResponseEntity<String>> create(@RequestBody VehicleTypeDto dto) {
         return service.createVehicleType(dto)
                 .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Vehicle type created successfully."))
-                // Catch the validation error thrown by the Service layer
+
                 .onErrorResume(IllegalArgumentException.class,
                         e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }

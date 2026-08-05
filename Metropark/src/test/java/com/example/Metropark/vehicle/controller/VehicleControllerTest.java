@@ -62,20 +62,17 @@ class VehicleControllerTest {
         assertEquals("Vehicle registration number is required.", response);
     }
 
-    // @Test
-    // void getAllVehiclesReturnsList() {
-    //     when(vehicleService.getAllVehicles()).thenReturn(Flux.just(TestFixtures.vehicleDto()));
 
-    //     List<VehicleDto> response = webTestClient.get()
-    //             .uri("/api/vehicles")
-    //             .exchange()
-    //             .expectStatus().isOk()
-    //             .expectBodyList(VehicleDto.class)
-    //             .returnResult()
-    //             .getResponseBody();
 
-    //     assertEquals(List.of(TestFixtures.vehicleDto()), response);
-    // }
+
+
+
+
+
+
+
+
+
 
     @Test
     void getVehicleByIdReturnsVehicle() {

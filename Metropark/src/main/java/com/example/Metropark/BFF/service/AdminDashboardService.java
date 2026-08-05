@@ -201,8 +201,8 @@ public class AdminDashboardService {
         }
 
         public Mono<List<AlertDto>> getAlerts() {
-                // For now, return mock alerts since there's no alerts table
-                // In production, this would query an alerts table
+
+
                 return Mono.just(List.of(
                                 new AlertDto(
                                                 "ALT-001",

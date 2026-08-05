@@ -95,7 +95,7 @@ public final class TestFixtures {
     }
 
     public static ReservationDto reservationDto() {
-        return new ReservationDto(1, 1001, 5, null, "RESERVED", 1, FIXED_TIME, FIXED_TIME.plusMinutes(30), FIXED_TIME,
+        return new ReservationDto(1, "USR-1494", 5, null, "RESERVED", 1, FIXED_TIME, FIXED_TIME.plusMinutes(30), FIXED_TIME,
                 FIXED_TIME);
     }
 

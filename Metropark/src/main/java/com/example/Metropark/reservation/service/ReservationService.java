@@ -32,10 +32,10 @@ public class ReservationService {
     public Mono<Integer> createReservation(ReservationDto dto) {
 
         LOGGER.info("Creating reservation: {}", dto);
+
         if (dto.userId() == null || dto.slotId() == null) {
-            return Mono.error(
-                    new IllegalArgumentException(
-                            "User ID and Slot ID are strictly required."));
+            return Mono.error(new IllegalArgumentException(
+                    "User ID and Slot ID are strictly required."));
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -49,7 +49,7 @@ public class ReservationService {
                 : "RESERVED";
 
         ReservationDto reservation = new ReservationDto(
-                dto.reservationId(),
+                null, // Database generates the ID
                 dto.userId(),
                 dto.slotId(),
                 dto.queueEntryId(),
@@ -61,23 +61,18 @@ public class ReservationService {
                 now);
 
         return parkingSlotRepository.reserveSlot(dto.slotId())
-
                 .flatMap(rowsUpdated -> {
 
                     if (rowsUpdated == 0) {
-
-                        return Mono.error(
-
-                                new IllegalStateException(
-                                        "Slot is already reserved or does not exist.")
-
-                        );
+                        return Mono.error(new IllegalStateException(
+                                "Slot is already reserved or does not exist."));
                     }
 
                     return reservationRepository.create(reservation)
-                            .doOnSuccess(rows -> LOGGER.info("Reservation created successfully, rows affected: {}", rows))
-                            .doOnError(e -> LOGGER.error("Error creating reservation: {}", e.getMessage()));
-
+                            .doOnSuccess(id -> LOGGER.info(
+                                    "Reservation created successfully. Reservation ID: {}",
+                                    id))
+                            .doOnError(e -> LOGGER.error("Error creating reservation", e));
                 });
     }
 

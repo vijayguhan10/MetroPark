@@ -10,5 +10,5 @@ public record ParkingSlotDto(
     @JsonProperty("reservationClassId") Integer reservationClassId,
     @JsonProperty("sensorId") String sensorId,
     @JsonProperty("currentStatus") String currentStatus
-    // @JsonProperty("updatedAt") LocalDateTime updatedAt
+
 ) {}

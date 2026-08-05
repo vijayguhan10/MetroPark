@@ -1,10 +1,19 @@
 package com.example.Metropark.reservation.controller;
 
-import com.example.Metropark.reservation.dto.ReservationDto;
-import com.example.Metropark.reservation.service.ReservationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.Metropark.reservation.dto.ReservationDto;
+import com.example.Metropark.reservation.service.ReservationService;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,11 +28,15 @@ public class ReservationController {
     }
 
     @PostMapping
-    public Mono<ResponseEntity<String>> create(@RequestBody ReservationDto dto) {
+    public Mono<ResponseEntity<Integer>> create(@RequestBody ReservationDto dto) {
         return service.createReservation(dto)
-                .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Reservation placed successfully."))
-                .onErrorResume(IllegalArgumentException.class, e -> 
-                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                .map(reservationId -> ResponseEntity
+                        .status(HttpStatus.CREATED)
+                        .body(reservationId))
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity
+                                .badRequest()
+                                .build()));
     }
 
     @GetMapping
@@ -40,15 +53,15 @@ public class ReservationController {
 
     @PatchMapping("/{id}/status")
     public Mono<ResponseEntity<String>> updateStatus(
-            @PathVariable Integer id, 
-            @RequestParam String status, 
+            @PathVariable Integer id,
+            @RequestParam String status,
             @RequestParam Integer currentVersion) {
-            
+
         return service.updateStatus(id, status, currentVersion)
                 .map(rows -> ResponseEntity.ok("Reservation status updated."))
-                .onErrorResume(IllegalArgumentException.class, e -> 
-                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
-                .onErrorResume(IllegalStateException.class, e -> 
-                        Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage())));
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
+                .onErrorResume(IllegalStateException.class,
+                        e -> Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage())));
     }
 }

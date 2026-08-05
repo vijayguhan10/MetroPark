@@ -32,9 +32,9 @@ class UserServiceTest {
                 java.time.LocalDateTime.of(2023, 5, 10, 0, 0));
         when(userRepository.createUser(any())).thenReturn(Mono.just(1));
 
-        Integer rows = service.createUser(input).block();
+        String rows = service.createUser(input).block();
 
-        assertEquals(1, rows);
+        assertEquals("1", rows);
         ArgumentCaptor<UserDto> captor = ArgumentCaptor.forClass(UserDto.class);
         verify(userRepository).createUser(captor.capture());
 

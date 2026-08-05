@@ -56,14 +56,12 @@ public class ParkingSlotService {
             return Mono.error(new IllegalArgumentException("Parking slots list cannot be empty."));
         }
 
-        // Validate all slots first
         for (ParkingSlotDto dto : dtos) {
             if (dto.locationId() == null || dto.displayCode() == null || dto.sensorId() == null) {
                 return Mono.error(new IllegalArgumentException("Location ID, Display Code, and Sensor ID are required for all slots."));
             }
         }
 
-        // Create all slots sequentially
         return Flux.fromIterable(dtos)
                 .flatMap(this::createSlot)
                 .reduce(0, Integer::sum)
