@@ -38,27 +38,21 @@ public class LiveDataService {
         "B5-01", "B5-02", "B5-03", "B5-04", "B5-05"
     );
 
-    /**
-     * Stream live sessions data every second via SSE - emits one session per second
-     */
+    
     public Flux<ActiveSessionDto> streamLiveSessions() {
         return Flux.interval(Duration.ofSeconds(1))
                 .map(tick -> generateRandomSession())
                 .onBackpressureDrop();
     }
 
-    /**
-     * Stream live payments/revenue data every second via SSE - emits one revenue update per second
-     */
+    
     public Flux<RevenueDto> streamLivePayments() {
         return Flux.interval(Duration.ofSeconds(1))
                 .map(tick -> generateRandomRevenue())
                 .onBackpressureDrop();
     }
 
-    /**
-     * Get initial sessions data (for REST fallback)
-     */
+    
     public Flux<ActiveSessionDto> getLiveSessions() {
         int sessionCount = ThreadLocalRandom.current().nextInt(8, 20);
         return Flux.range(1, sessionCount)
@@ -66,9 +60,7 @@ public class LiveDataService {
                 .delayElements(Duration.ofMillis(100));
     }
 
-    /**
-     * Get initial payments data (for REST fallback)
-     */
+    
     public Mono<RevenueDto> getLivePayments() {
         return Mono.just(generateRandomRevenue());
     }

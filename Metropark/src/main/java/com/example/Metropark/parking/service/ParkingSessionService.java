@@ -85,7 +85,7 @@ public class ParkingSessionService {
                                 .flatMap(user -> "ACTIVE".equalsIgnoreCase(user.userStatus())
                                                 ? Mono.<Void>empty()
                                                 : Mono.error(new IllegalStateException("User account is inactive.")));
-                // Check if the vehicle is already parked somewhere else!
+
                 Mono<Void> checkDuplicateSession = sessionRepository.hasActiveSession(dto.vehicleId())
                                 .flatMap(hasSession -> {
                                         if (hasSession) {
@@ -132,7 +132,7 @@ public class ParkingSessionService {
                                                                 LOGGER.info(
                                                                                 "Parking session created successfully, rows affected: {}",
                                                                                 rows);
-                                                                // Broadcast session creation via WebSocket
+
                                                         })
                                                         .doOnError(e -> LOGGER.error(
                                                                         "Error creating parking session: {}",
@@ -156,7 +156,6 @@ public class ParkingSessionService {
                                                 e.getMessage()));
         }
 
-        // New methods with joined foreign key data
         public Flux<ParkingSessionResponseDto> getAllSessionsWithDetails() {
                 LOGGER.debug("Fetching all parking sessions with details");
                 return sessionRepository.findAllWithDetails()
@@ -194,7 +193,7 @@ public class ParkingSessionService {
                                                 currentVersion)
                                 .flatMap(rowsUpdated -> {
                                         if (rowsUpdated > 0) {
-                                                // Broadcast session update via WebSocket
+
                                                 broadcastSessionUpdated(id, status.trim().toUpperCase());
                                                 return Mono.just(rowsUpdated);
                                         } else {

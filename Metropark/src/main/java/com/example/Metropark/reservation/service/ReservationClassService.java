@@ -68,7 +68,6 @@ public class ReservationClassService {
                 .doOnError(e -> LOGGER.error("Error deleting reservation class id {}: {}", id, e.getMessage()));
     }
 
-    // Robust Helper: Standardizes inputs like "vip" -> "Vip" or "GENERAL" -> "General"
     private String convertToPascalCase(String input) {
         String trimmed = input.trim();
         if (trimmed.isEmpty()) return trimmed;

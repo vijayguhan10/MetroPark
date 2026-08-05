@@ -35,7 +35,6 @@ public class VehicleService {
             return Mono.error(new IllegalArgumentException("Vehicle registration number is required."));
         }
 
-        // Robust Data Sanitization: Remove ALL spaces, hyphens, and make uppercase
         String cleanVehicleNumber = dto.vehicleNumber()
                 .replaceAll("[\\s\\-]", "")
                 .toUpperCase();

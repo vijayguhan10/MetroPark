@@ -1,16 +1,17 @@
 package com.example.Metropark.reservation.repo;
 
-import com.example.Metropark.reservation.dto.ReservationDto;
-import org.jooq.DSLContext;
-import org.jooq.Record;
-import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import java.time.LocalDateTime;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
+import org.springframework.stereotype.Repository;
+
+import com.example.Metropark.reservation.dto.ReservationDto;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Repository
 public class ReservationRepository {
@@ -45,7 +46,6 @@ public class ReservationRepository {
                 .map(this::mapToDto);
     }
 
-    // THE OPTIMISTIC LOCKING QUERY
     public Mono<Integer> updateStatusWithOptimisticLock(
             Integer reservationId,
             String reservationStatus,
@@ -66,7 +66,7 @@ public class ReservationRepository {
     private ReservationDto mapToDto(Record record) {
         return new ReservationDto(
                 record.get("reservation_id", Integer.class),
-                record.get("user_id", Integer.class),
+                record.get("user_id", String.class),
                 record.get("slot_id", Integer.class),
                 record.get("queue_entry_id", Integer.class),
                 record.get("reservation_status", String.class),

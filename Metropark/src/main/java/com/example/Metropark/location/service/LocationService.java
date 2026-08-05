@@ -27,13 +27,11 @@ public class LocationService {
     @Transactional
     public Mono<Integer> createLocation(LocationDto dto) {
         LOGGER.info("Creating location: {}", dto);
-        // Automatically generate an ID like "LOC-304"
+
         String generatedId = "LOC-" + String.format("%03d", new Random().nextInt(1000));
-        
-        // Default to ACTIVE if the user didn't provide a status
+
         String finalStatus = (dto.status() != null) ? dto.status() : "ACTIVE";
 
-        // Rebuild the DTO with the generated data
         LocationDto locationToSave = new LocationDto(
                 generatedId, 
                 dto.typeId(), 

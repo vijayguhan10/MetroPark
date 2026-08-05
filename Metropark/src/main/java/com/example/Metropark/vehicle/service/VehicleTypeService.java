@@ -23,15 +23,13 @@ public class VehicleTypeService {
     @Transactional
     public Mono<Integer> createVehicleType(VehicleTypeDto dto) {
         LOGGER.info("Creating vehicle type: {}", dto);
-        // 1. Validation: Prevent null or completely empty strings
+
         if (dto.typeDisplayName() == null || dto.typeDisplayName().trim().isEmpty()) {
             return Mono.error(new IllegalArgumentException("Vehicle type display name cannot be empty."));
         }
 
-        // 2. Sanitization: Trim accidental leading/trailing whitespace
         String cleanName = dto.typeDisplayName().trim();
 
-        // 3. Rebuild DTO with clean data
         VehicleTypeDto cleanDto = new VehicleTypeDto(dto.vehicleTypeId(), cleanName);
 
         return repository.create(cleanDto)

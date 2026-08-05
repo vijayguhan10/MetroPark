@@ -54,19 +54,17 @@ public class ParkingSlotController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    // Patches the status using the Optimistic Lock logic
-    // @PatchMapping("/{id}/status")
-    // public Mono<ResponseEntity<String>> updateStatus(
-    // @PathVariable Integer id,
-    // @RequestParam String status,
-    // @RequestParam Integer currentVersion) {
 
-    // return service.updateSlotStatus(id, status, currentVersion)
-    // .map(rows -> ResponseEntity.ok("Slot occupancy status updated
-    // successfully."))
-    // .onErrorResume(IllegalArgumentException.class, e ->
-    // Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
-    // .onErrorResume(IllegalStateException.class, e ->
-    // Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage())));
-    // }
+
+
+
+
+
+
+
+
+
+
+
+
 }

@@ -1,14 +1,16 @@
 package com.example.Metropark.parking.repo;
 
-import com.example.Metropark.parking.dto.ParkingSlotDto;
 import org.jooq.DSLContext;
 import org.jooq.Record;
-import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.Metropark.parking.dto.ParkingSlotDto;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Repository
 public class ParkingSlotRepository {
@@ -18,7 +20,7 @@ public class ParkingSlotRepository {
     public ParkingSlotRepository(DSLContext dsl) {
         this.dsl = dsl;
     }
-
+    @Transactional
     public Mono<Integer> create(ParkingSlotDto dto) {
 
         return Mono.from(
@@ -63,14 +65,7 @@ public class ParkingSlotRepository {
         ).map(this::mapToDto);
     }
 
-    /**
-     * Atomic reservation.
-     *
-     * UPDATE parking_slots
-     * SET current_status='RESERVED'
-     * WHERE slot_id=?
-     * AND current_status='AVAILABLE'
-     */
+    
     public Mono<Integer> reserveSlot(Integer slotId) {
 
         return Mono.from(
@@ -78,7 +73,7 @@ public class ParkingSlotRepository {
                 dsl.update(table("parking_slots"))
                         .set(field("current_status"), "RESERVED")
                         .where(field("slot_id").eq(slotId))
-                        .and(field("current_status").eq("AVAILABLE"))
+                       
 
         );
     }

@@ -22,7 +22,6 @@ public class LiveDataController {
         this.liveDataService = liveDataService;
     }
 
-    // REST endpoints (for initial load / fallback)
     @GetMapping("/sessions")
     public Flux<ActiveSessionDto> getLiveSessions() {
         return liveDataService.getLiveSessions();
@@ -33,7 +32,6 @@ public class LiveDataController {
         return liveDataService.getLivePayments();
     }
 
-    // Server-Sent Events (SSE) endpoints for real-time streaming
     @GetMapping(value = "/sessions/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ActiveSessionDto> streamLiveSessions() {
         return liveDataService.streamLiveSessions();

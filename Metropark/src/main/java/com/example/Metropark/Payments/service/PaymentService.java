@@ -77,7 +77,6 @@ public class PaymentService {
                         return Mono.error(new IllegalArgumentException("Session ID is required."));
                     }
 
-                    // Fetch session to get user_id
                     return sessionRepository.findById(cleanDto.sessionId())
                             .switchIfEmpty(Mono.error(new IllegalArgumentException("Parking session not found.")))
                             .flatMap(session -> {
@@ -160,7 +159,7 @@ public class PaymentService {
         return paymentRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Payment not found.")))
                 .flatMap(existing -> {
-                    // Log before DB update
+
                     LOGGER.info(
                             "Payment status update initiated: paymentId={}, currentStatus={}, newStatus={}, changedBy={}, reason={}, gatewayReference={}",
                             id,

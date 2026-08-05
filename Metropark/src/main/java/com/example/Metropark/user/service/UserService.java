@@ -1,14 +1,17 @@
 package com.example.Metropark.user.service;
 
-import com.example.Metropark.user.dto.UserDto;
-import com.example.Metropark.user.repo.UserRepository;
+import java.util.Random;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.Metropark.user.dto.UserDto;
+import com.example.Metropark.user.repo.UserRepository;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import java.util.Random;
 
 @Service
 public class UserService {
@@ -22,7 +25,7 @@ public class UserService {
     }
 
     @Transactional
-    public Mono<Integer> createUser(UserDto userDto) {
+    public Mono<String> createUser(UserDto userDto) {
         LOGGER.info("Creating user: {}", userDto);
         String generatedId = "USR-" + (new Random().nextInt(9000) + 1000);
 
@@ -34,10 +37,10 @@ public class UserService {
                 userDto.userStatus() != null ? userDto.userStatus() : "ACTIVE",
                 java.time.LocalDateTime.now());
 
-        // 3. Save to database
         return userRepository.createUser(userToSave)
-                .doOnSuccess(rows -> LOGGER.info("User created successfully, rows affected: {}", rows))
-                .doOnError(e -> LOGGER.error("Error creating user: {}", e.getMessage()));
+                .doOnSuccess(rows -> LOGGER.info("User created successfully, user ID: {}, rows affected: {}",
+                        generatedId, rows))
+                .doOnError(e -> LOGGER.error("Error creating user: {}", e.getMessage())).thenReturn(generatedId);
     }
 
     public Mono<UserDto> getUser(String userId) {
