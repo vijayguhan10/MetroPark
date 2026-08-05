@@ -32,8 +32,8 @@ public class VehicleController {
     public Mono<ResponseEntity<String>> register(@RequestBody VehicleDto dto) {
         return service.registerVehicle(dto)
                 .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Vehicle registered successfully."))
-                .onErrorResume(IllegalArgumentException.class, e -> 
-                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
     @GetMapping
@@ -48,16 +48,23 @@ public class VehicleController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/user/{userId}")
+    public Flux<VehicleResponseDto> getVehiclesByUserId(
+            @PathVariable String userId) {
+
+        return service.getVehiclesByUserId(userId);
+    }
+
     @PatchMapping("/{id}/status")
     public Mono<ResponseEntity<String>> updateStatus(
-            @PathVariable Integer id, 
+            @PathVariable Integer id,
             @RequestParam Boolean isActive) {
-            
+
         return service.toggleVehicleStatus(id, isActive)
                 .map(rows -> ResponseEntity.ok("Vehicle status updated successfully."))
-                .onErrorResume(IllegalArgumentException.class, e -> 
-                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
-                .onErrorResume(IllegalStateException.class, e -> 
-                        Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage())));
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
+                .onErrorResume(IllegalStateException.class,
+                        e -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage())));
     }
 }

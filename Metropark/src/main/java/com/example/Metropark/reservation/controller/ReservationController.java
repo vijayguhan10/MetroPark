@@ -28,11 +28,15 @@ public class ReservationController {
     }
 
     @PostMapping
-    public Mono<ResponseEntity<String>> create(@RequestBody ReservationDto dto) {
+    public Mono<ResponseEntity<Integer>> create(@RequestBody ReservationDto dto) {
         return service.createReservation(dto)
-                .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Reservation placed successfully."))
-                .onErrorResume(IllegalArgumentException.class, e -> 
-                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                .map(reservationId -> ResponseEntity
+                        .status(HttpStatus.CREATED)
+                        .body(reservationId))
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity
+                                .badRequest()
+                                .build()));
     }
 
     @GetMapping
@@ -49,15 +53,15 @@ public class ReservationController {
 
     @PatchMapping("/{id}/status")
     public Mono<ResponseEntity<String>> updateStatus(
-            @PathVariable Integer id, 
-            @RequestParam String status, 
+            @PathVariable Integer id,
+            @RequestParam String status,
             @RequestParam Integer currentVersion) {
-            
+
         return service.updateStatus(id, status, currentVersion)
                 .map(rows -> ResponseEntity.ok("Reservation status updated."))
-                .onErrorResume(IllegalArgumentException.class, e -> 
-                        Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
-                .onErrorResume(IllegalStateException.class, e -> 
-                        Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage())));
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())))
+                .onErrorResume(IllegalStateException.class,
+                        e -> Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage())));
     }
 }

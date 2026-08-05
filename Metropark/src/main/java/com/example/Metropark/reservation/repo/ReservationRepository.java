@@ -23,17 +23,31 @@ public class ReservationRepository {
     }
 
     public Mono<Integer> create(ReservationDto dto) {
-        return Mono.from(dsl.insertInto(table("reservations"))
-                .columns(
-                        field("user_id"), field("slot_id"), field("queue_entry_id"),
-                        field("reservation_status"), field("reservation_version"),
-                        field("reserved_at"), field("expires_at"),
-                        field("created_at"), field("updated_at"))
-                .values(
-                        dto.userId(), dto.slotId(), dto.queueEntryId(),
-                        dto.reservationStatus(), dto.reservationVersion(),
-                        dto.reservedAt(), dto.expiresAt(),
-                        dto.createdAt(), dto.updatedAt()));
+
+        return Mono.from(
+                dsl.insertInto(table("reservations"))
+                        .columns(
+                                field("user_id"),
+                                field("slot_id"),
+                                field("queue_entry_id"),
+                                field("reservation_status"),
+                                field("reservation_version"),
+                                field("reserved_at"),
+                                field("expires_at"),
+                                field("created_at"),
+                                field("updated_at"))
+                        .values(
+                                dto.userId(),
+                                dto.slotId(),
+                                dto.queueEntryId(),
+                                dto.reservationStatus(),
+                                dto.reservationVersion(),
+                                dto.reservedAt(),
+                                dto.expiresAt(),
+                                dto.createdAt(),
+                                dto.updatedAt())
+                        .returning(field("reservation_id")))
+                .map(record -> record.get(field("reservation_id", Integer.class)));
     }
 
     public Flux<ReservationDto> findAll() {

@@ -35,8 +35,7 @@ public class ParkingSessionService {
                         VehicleRepository vehicleRepository,
                         ParkingSlotRepository slotRepository,
                         ReservationRepository reservationRepository,
-                        UserRepository userRepository
-                         ) {
+                        UserRepository userRepository) {
 
                 this.sessionRepository = sessionRepository;
                 this.vehicleRepository = vehicleRepository;
@@ -47,6 +46,7 @@ public class ParkingSessionService {
 
         @Transactional
         public Mono<Integer> createSession(ParkingSessionDto dto) {
+
                 LOGGER.info("Creating parking session: {}", dto);
 
                 if (dto.slotId() == null || dto.userId() == null || dto.vehicleId() == null) {
@@ -62,23 +62,25 @@ public class ParkingSessionService {
 
                 Mono<Void> slotValidation = slotRepository.findById(dto.slotId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Parking slot not found.")))
-                                .flatMap(slot -> "AVAILABLE".equalsIgnoreCase(slot.currentStatus())
-                                                ? Mono.<Void>empty()
-                                                : Mono.error(new IllegalStateException(
-                                                                "Parking slot is " + slot.currentStatus() + ".")));
+                                .flatMap(slot -> {
 
-                Mono<Void> reservationValidation = dto.reservationId() == null
-                                ? Mono.empty()
-                                : reservationRepository.findById(dto.reservationId())
-                                                .switchIfEmpty(Mono.error(
-                                                                new IllegalArgumentException("Reservation not found.")))
-                                                .flatMap(reservation -> "RESERVED"
-                                                                .equalsIgnoreCase(reservation.reservationStatus())
-                                                                                ? Mono.<Void>empty()
-                                                                                : Mono.error(new IllegalStateException(
-                                                                                                "Reservation is "
-                                                                                                                + reservation.reservationStatus()
-                                                                                                                + ".")));
+                                        if (dto.reservationId() != null) {
+
+                                                if ("RESERVED".equalsIgnoreCase(slot.currentStatus())) {
+                                                        return Mono.empty();
+                                                }
+
+                                                return Mono.error(new IllegalStateException(
+                                                                "Reserved session requires slot status RESERVED."));
+                                        }
+
+                                        if ("AVAILABLE".equalsIgnoreCase(slot.currentStatus())) {
+                                                return Mono.empty();
+                                        }
+
+                                        return Mono.error(new IllegalStateException(
+                                                        "Parking slot is " + slot.currentStatus()));
+                                });
 
                 Mono<Void> userValidation = userRepository.findById(dto.userId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found.")))
@@ -92,15 +94,31 @@ public class ParkingSessionService {
                                                 return Mono.error(new IllegalStateException(
                                                                 "Cannot start session: This vehicle is already parked or has a pending entry in another location."));
                                         }
-                                        return Mono.<Void>empty();
+                                        return Mono.empty();
                                 });
+
+                Mono<Void> reservationValidation = Mono.empty();
+
+                if (dto.reservationId() != null) {
+                        reservationValidation = reservationRepository.findById(dto.reservationId())
+                                        .switchIfEmpty(Mono
+                                                        .error(new IllegalArgumentException("Reservation not found.")))
+                                        .flatMap(reservation -> {
+                                                if ("RESERVED".equalsIgnoreCase(reservation.reservationStatus())) {
+                                                        return Mono.empty();
+                                                }
+                                                return Mono.error(new IllegalStateException(
+                                                                "Reservation is " + reservation.reservationStatus()
+                                                                                + "."));
+                                        });
+                }
 
                 return Mono.when(
                                 vehicleValidation,
                                 slotValidation,
-                                reservationValidation,
                                 userValidation,
-                                checkDuplicateSession)
+                                checkDuplicateSession,
+                                reservationValidation)
                                 .then(Mono.defer(() -> {
 
                                         LocalDateTime now = LocalDateTime.now();
@@ -128,15 +146,12 @@ public class ParkingSessionService {
                                                         now);
 
                                         return sessionRepository.create(session)
-                                                        .doOnSuccess(rows -> {
-                                                                LOGGER.info(
-                                                                                "Parking session created successfully, rows affected: {}",
-                                                                                rows);
-
-                                                        })
-                                                        .doOnError(e -> LOGGER.error(
-                                                                        "Error creating parking session: {}",
-                                                                        e.getMessage()));
+                                                        .doOnSuccess(sessionId -> LOGGER.info(
+                                                                        "Parking session created successfully. Session ID: {}",
+                                                                        sessionId))
+                                                        .doOnError(error -> LOGGER.error(
+                                                                        "Error creating parking session",
+                                                                        error));
                                 }));
         }
 
