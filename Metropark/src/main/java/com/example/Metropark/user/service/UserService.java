@@ -67,4 +67,11 @@ public class UserService {
                 .doOnSuccess(rows -> LOGGER.info("User status updated successfully, rows affected: {}", rows))
                 .doOnError(e -> LOGGER.error("Error updating user status id {}: {}", userId, e.getMessage()));
     }
+
+    public Mono<String> login(String phone) {
+        LOGGER.info("Login attempt with phone: {}", phone);
+        return userRepository.findUserIdByPhone(phone)
+                .doOnSuccess(userId -> LOGGER.info("Login successful for phone: {}, userId: {}", phone, userId))
+                .doOnError(e -> LOGGER.error("Login error for phone {}: {}", phone, e.getMessage()));
+    }
 }

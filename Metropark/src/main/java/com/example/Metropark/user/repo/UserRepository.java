@@ -1,5 +1,7 @@
 package com.example.Metropark.user.repo;
 
+import java.time.LocalDateTime;
+
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import static org.jooq.impl.DSL.field;
@@ -10,8 +12,6 @@ import com.example.Metropark.user.dto.UserDto;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.time.LocalDateTime;
 
 @Repository
 public class UserRepository {
@@ -43,6 +43,13 @@ public class UserRepository {
         return Mono.from(dsl.update(table("users"))
                 .set(field("user_status"), status)
                 .where(field("user_id").eq(userId)));
+    }
+
+    public Mono<String> findUserIdByPhone(String phone) {
+        return Mono.from(dsl.select(field("user_id"))
+                .from(table("users"))
+                .where(field("phone").eq(phone)))
+                .map(record -> record.get("user_id", String.class));
     }
 
     private UserDto mapToDto(Record record) {

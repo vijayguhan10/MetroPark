@@ -10,10 +10,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.Metropark.event.EventPublisher;
+import com.example.Metropark.event.payload.PaymentEventPayload;
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
 import com.example.Metropark.payments.dto.PaymentDto;
 import com.example.Metropark.payments.dto.PaymentStatusUpdateDto;
 import com.example.Metropark.payments.repo.PaymentRepository;
+import com.example.Metropark.redis.RedisStateService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -39,17 +42,23 @@ public class PaymentService {
     private final PaymentAuditLogger auditLogger;
     private final PaymentMethodService paymentMethodService;
     private final ParkingSessionRepository sessionRepository;
+    private final RedisStateService redisStateService;
+    private final EventPublisher eventPublisher;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             PaymentAuditLogger auditLogger,
             PaymentMethodService paymentMethodService,
-            ParkingSessionRepository sessionRepository) {
+            ParkingSessionRepository sessionRepository,
+            RedisStateService redisStateService,
+            EventPublisher eventPublisher) {
 
         this.paymentRepository = paymentRepository;
         this.auditLogger = auditLogger;
         this.paymentMethodService = paymentMethodService;
         this.sessionRepository = sessionRepository;
+        this.redisStateService = redisStateService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -95,6 +104,32 @@ public class PaymentService {
                                         cleanDto.createdAt(),
                                         cleanDto.updatedAt());
                                 return paymentRepository.create(dtoWithUserId)
+                                        .flatMap(paymentId -> {
+                                            // Update the payment with the generated ID
+                                            PaymentDto savedPayment = new PaymentDto(
+                                                    paymentId.longValue(),
+                                                    dtoWithUserId.transactionReference(),
+                                                    dtoWithUserId.sessionId(),
+                                                    dtoWithUserId.userId(),
+                                                    dtoWithUserId.methodId(),
+                                                    dtoWithUserId.amount(),
+                                                    dtoWithUserId.currency(),
+                                                    dtoWithUserId.paymentStatus(),
+                                                    dtoWithUserId.gatewayResponseCode(),
+                                                    dtoWithUserId.gatewayResponseMessage(),
+                                                    dtoWithUserId.processedAt(),
+                                                    dtoWithUserId.createdAt(),
+                                                    dtoWithUserId.updatedAt()
+                                            );
+                                            
+                                            long version = 1;
+                                            
+                                            // Save to Redis
+                                            return redisStateService.savePayment(savedPayment, version)
+                                                    .then(redisStateService.incrementVersion("payment", paymentId.toString()))
+                                                    .then(eventPublisher.publishPaymentCompleted(toPaymentEventPayload(savedPayment), version))
+                                                    .thenReturn(paymentId);
+                                        })
                                         .doOnSuccess(rows -> {
                                             LOGGER.info("Payment created successfully, rows affected: {}", rows);
                                             auditLogger.logPaymentCreated(dtoWithUserId, rows);
@@ -106,14 +141,20 @@ public class PaymentService {
 
     public Flux<PaymentDto> getAllPayments() {
         LOGGER.debug("Fetching all payments");
-        return paymentRepository.findAll()
+        // Try Redis first, fallback to DB
+        return redisStateService.getAllPayments()
+                .map(this::toPaymentDto)
+                .switchIfEmpty(paymentRepository.findAll())
                 .doOnComplete(() -> LOGGER.debug("Fetched all payments successfully"))
                 .doOnError(e -> LOGGER.error("Error fetching all payments: {}", e.getMessage()));
     }
 
     public Mono<PaymentDto> getPaymentById(Long id) {
         LOGGER.debug("Fetching payment by id: {}", id);
-        return paymentRepository.findById(id)
+        // Try Redis first, fallback to DB
+        return redisStateService.getPayment(id)
+                .map(this::toPaymentDto)
+                .switchIfEmpty(paymentRepository.findById(id))
                 .doOnSuccess(dto -> LOGGER.debug("Fetched payment: {}", dto))
                 .doOnError(e -> LOGGER.error("Error fetching payment by id {}: {}", id, e.getMessage()));
     }
@@ -187,7 +228,15 @@ public class PaymentService {
                                                     changedBy,
                                                     dto.reason(),
                                                     dto.gatewayReference()))
-                                                    .thenReturn(rows)));
+                                                    .thenReturn(rows)))
+                            .flatMap(rows -> {
+                                // Increment version and update Redis
+                                return redisStateService.incrementVersion("payment", id.toString())
+                                        .flatMap(version -> redisStateService.updatePaymentStatus(id, normalizedStatus, version)
+                                                .then(eventPublisher.publishPaymentCompleted(
+                                                        toPaymentEventPayload(id, normalizedStatus), version)))
+                                        .thenReturn(rows);
+                            });
                 })
                 .doOnSuccess(rows -> LOGGER.info("Payment status updated successfully, rows affected: {}", rows))
                 .doOnError(e -> LOGGER.error("Error updating payment status id {}: {}", id, e.getMessage()));
@@ -230,9 +279,9 @@ public class PaymentService {
                 ? null
                 : dto.transactionReference().trim();
 
-        if (normalizedReference == null) {
-            throw new IllegalArgumentException("Transaction reference is required for non-cash payments.");
-        }
+        // if (normalizedReference == null) {
+        //     throw new IllegalArgumentException("Transaction reference is required for non-cash payments.");
+        // }
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime processedAt = dto.processedAt();
@@ -254,5 +303,57 @@ public class PaymentService {
                 processedAt,
                 dto.createdAt() == null ? now : dto.createdAt(),
                 now);
+    }
+
+    private PaymentEventPayload toPaymentEventPayload(PaymentDto dto) {
+        return new PaymentEventPayload(
+                dto.paymentId(),
+                dto.transactionReference(),
+                dto.sessionId(),
+                dto.userId(),
+                dto.methodId(),
+                dto.amount(),
+                dto.currency(),
+                dto.paymentStatus(),
+                dto.gatewayResponseCode(),
+                dto.gatewayResponseMessage(),
+                dto.processedAt(),
+                LocalDateTime.now()
+        );
+    }
+
+    private PaymentEventPayload toPaymentEventPayload(Long paymentId, String status) {
+        return new PaymentEventPayload(
+                paymentId,
+                null, // transactionReference
+                null, // sessionId
+                null, // userId
+                null, // methodId
+                null, // amount
+                null, // currency
+                status,
+                null, // gatewayResponseCode
+                null, // gatewayResponseMessage
+                null, // processedAt
+                LocalDateTime.now()
+        );
+    }
+
+    private PaymentDto toPaymentDto(PaymentEventPayload payload) {
+        return new PaymentDto(
+                payload.paymentId(),
+                payload.transactionReference(),
+                payload.sessionId(),
+                payload.userId(),
+                payload.methodId(),
+                payload.amount(),
+                payload.currency(),
+                payload.paymentStatus(),
+                payload.gatewayResponseCode(),
+                payload.gatewayResponseMessage(),
+                payload.processedAt(),
+                payload.updatedAt(),
+                payload.updatedAt()
+        );
     }
 }

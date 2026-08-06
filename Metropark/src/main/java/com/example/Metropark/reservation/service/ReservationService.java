@@ -7,9 +7,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.Metropark.event.EventPublisher;
+import com.example.Metropark.event.payload.ReservationEventPayload;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.reservation.dto.ReservationDto;
 import com.example.Metropark.reservation.repo.ReservationRepository;
+import com.example.Metropark.redis.RedisStateService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -21,11 +24,17 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final ParkingSlotRepository parkingSlotRepository;
+    private final RedisStateService redisStateService;
+    private final EventPublisher eventPublisher;
 
     public ReservationService(ReservationRepository reservationRepository,
-            ParkingSlotRepository parkingSlotRepository) {
+            ParkingSlotRepository parkingSlotRepository,
+            RedisStateService redisStateService,
+            EventPublisher eventPublisher) {
         this.reservationRepository = reservationRepository;
         this.parkingSlotRepository = parkingSlotRepository;
+        this.redisStateService = redisStateService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -69,6 +78,29 @@ public class ReservationService {
                     }
 
                     return reservationRepository.create(reservation)
+                            .flatMap(reservationId -> {
+                                // Update the reservation with the generated ID
+                                ReservationDto savedReservation = new ReservationDto(
+                                        reservationId,
+                                        reservation.userId(),
+                                        reservation.slotId(),
+                                        reservation.queueEntryId(),
+                                        reservation.reservationStatus(),
+                                        reservation.reservationVersion(),
+                                        reservation.reservedAt(),
+                                        reservation.expiresAt(),
+                                        reservation.createdAt(),
+                                        reservation.updatedAt()
+                                );
+                                
+                                long version = 1;
+                                
+                                // Save to Redis
+                                return redisStateService.saveReservation(savedReservation, version)
+                                        .then(redisStateService.incrementVersion("reservation", reservationId.toString()))
+                                        .then(eventPublisher.publishReservationCreated(toReservationEventPayload(savedReservation), version))
+                                        .thenReturn(rowsUpdated);
+                            })
                             .doOnSuccess(id -> LOGGER.info(
                                     "Reservation created successfully. Reservation ID: {}",
                                     id))
@@ -78,14 +110,20 @@ public class ReservationService {
 
     public Flux<ReservationDto> getAllReservations() {
         LOGGER.debug("Fetching all reservations");
-        return reservationRepository.findAll()
+        // Try Redis first, fallback to DB
+        return redisStateService.getAllReservations()
+                .map(this::toReservationDto)
+                .switchIfEmpty(reservationRepository.findAll())
                 .doOnComplete(() -> LOGGER.debug("Fetched all reservations successfully"))
                 .doOnError(e -> LOGGER.error("Error fetching all reservations: {}", e.getMessage()));
     }
 
     public Mono<ReservationDto> getReservationById(Integer id) {
         LOGGER.debug("Fetching reservation by id: {}", id);
-        return reservationRepository.findById(id)
+        // Try Redis first, fallback to DB
+        return redisStateService.getReservation(id)
+                .map(this::toReservationDto)
+                .switchIfEmpty(reservationRepository.findById(id))
                 .doOnSuccess(dto -> LOGGER.debug("Fetched reservation: {}", dto))
                 .doOnError(e -> LOGGER.error("Error fetching reservation by id {}: {}", id, e.getMessage()));
     }
@@ -97,15 +135,66 @@ public class ReservationService {
             return Mono.error(new IllegalArgumentException("Status cannot be empty."));
         }
 
-        return reservationRepository.updateStatusWithOptimisticLock(id, status.trim().toUpperCase(), currentVersion)
+        String normalizedStatus = status.trim().toUpperCase();
+
+        return reservationRepository.updateStatusWithOptimisticLock(id, normalizedStatus, currentVersion)
                 .flatMap(rowsUpdated -> {
                     if (rowsUpdated == 0) {
                         return Mono.error(new IllegalStateException(
                                 "Update failed: Concurrency conflict or Reservation not found. Please refresh and try again."));
                     }
-                    LOGGER.info("Reservation status updated successfully, rows affected: {}", rowsUpdated);
-                    return Mono.just(rowsUpdated);
+                    
+                    // Increment version and update Redis
+                    return redisStateService.incrementVersion("reservation", id.toString())
+                            .flatMap(version -> redisStateService.updateReservationStatus(id, normalizedStatus, version)
+                                    .then(eventPublisher.publishReservationCancelled(
+                                            toReservationEventPayload(id, normalizedStatus), version)))
+                            .thenReturn(rowsUpdated);
                 })
+                .doOnSuccess(rows -> LOGGER.info("Reservation status updated successfully, rows affected: {}", rows))
                 .doOnError(e -> LOGGER.error("Error updating reservation status id {}: {}", id, e.getMessage()));
+    }
+
+    private ReservationEventPayload toReservationEventPayload(ReservationDto dto) {
+        return new ReservationEventPayload(
+                dto.reservationId(),
+                dto.userId(),
+                dto.slotId(),
+                dto.queueEntryId(),
+                dto.reservationStatus(),
+                dto.reservationVersion(),
+                dto.reservedAt(),
+                dto.expiresAt(),
+                LocalDateTime.now()
+        );
+    }
+
+    private ReservationEventPayload toReservationEventPayload(Integer reservationId, String status) {
+        return new ReservationEventPayload(
+                reservationId,
+                null, // userId
+                null, // slotId
+                null, // queueEntryId
+                status,
+                null, // reservationVersion
+                null, // reservedAt
+                null, // expiresAt
+                LocalDateTime.now()
+        );
+    }
+
+    private ReservationDto toReservationDto(ReservationEventPayload payload) {
+        return new ReservationDto(
+                payload.reservationId(),
+                payload.userId(),
+                payload.slotId(),
+                payload.queueEntryId(),
+                payload.reservationStatus(),
+                payload.reservationVersion(),
+                payload.reservedAt(),
+                payload.expiresAt(),
+                payload.updatedAt(),
+                payload.updatedAt()
+        );
     }
 }

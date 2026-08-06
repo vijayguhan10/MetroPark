@@ -7,7 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.Metropark.BFF.dto.ActiveSessionDto;
+import com.example.Metropark.event.EventPublisher;
+import com.example.Metropark.event.payload.SessionEventPayload;
 import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSessionResponseDto;
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
@@ -15,6 +16,7 @@ import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.reservation.repo.ReservationRepository;
 import com.example.Metropark.user.repo.UserRepository;
 import com.example.Metropark.vehicle.repo.VehicleRepository;
+import com.example.Metropark.redis.RedisStateService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -29,19 +31,25 @@ public class ParkingSessionService {
         private final ParkingSlotRepository slotRepository;
         private final ReservationRepository reservationRepository;
         private final UserRepository userRepository;
+        private final RedisStateService redisStateService;
+        private final EventPublisher eventPublisher;
 
         public ParkingSessionService(
                         ParkingSessionRepository sessionRepository,
                         VehicleRepository vehicleRepository,
                         ParkingSlotRepository slotRepository,
                         ReservationRepository reservationRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        RedisStateService redisStateService,
+                        EventPublisher eventPublisher) {
 
                 this.sessionRepository = sessionRepository;
                 this.vehicleRepository = vehicleRepository;
                 this.slotRepository = slotRepository;
                 this.reservationRepository = reservationRepository;
                 this.userRepository = userRepository;
+                this.redisStateService = redisStateService;
+                this.eventPublisher = eventPublisher;
         }
 
         @Transactional
@@ -146,29 +154,63 @@ public class ParkingSessionService {
                                                         now);
 
                                         return sessionRepository.create(session)
+                                                        .flatMap(sessionId -> {
+                                                            // Update the session with the generated ID
+                                                            ParkingSessionDto savedSession = new ParkingSessionDto(
+                                                                    sessionId,
+                                                                    session.reservationId(),
+                                                                    session.slotId(),
+                                                                    session.userId(),
+                                                                    session.vehicleId(),
+                                                                    session.entryGateId(),
+                                                                    session.exitGateId(),
+                                                                    session.sessionStatus(),
+                                                                    session.actualEntryTime(),
+                                                                    session.actualExitTime(),
+                                                                    session.expectedExitTime(),
+                                                                    session.durationMinutes(),
+                                                                    session.paymentStatus(),
+                                                                    session.sessionVersion(),
+                                                                    session.createdAt(),
+                                                                    session.updatedAt()
+                                                            );
+                                                            
+                                                            long version = 1;
+                                                            
+                                                            // Save to Redis
+                                                            return redisStateService.saveSession(savedSession, version)
+                                                                    .then(redisStateService.incrementVersion("session", sessionId.toString()))
+                                                                    .then(eventPublisher.publishSessionStarted(toSessionEventPayload(savedSession), version))
+                                                                    .thenReturn(sessionId);
+                                                        })
                                                         .doOnSuccess(sessionId -> LOGGER.info(
                                                                         "Parking session created successfully. Session ID: {}",
                                                                         sessionId))
                                                         .doOnError(error -> LOGGER.error(
-                                                                        "Error creating parking session",
-                                                                        error));
+                                                                        "Error creating parking session", error));
                                 }));
         }
 
         public Flux<ParkingSessionDto> getAllSessions() {
                 LOGGER.debug("Fetching all parking sessions");
-                return sessionRepository.findAll()
-                                .doOnComplete(() -> LOGGER.debug("Fetched all parking sessions successfully"))
-                                .doOnError(e -> LOGGER.error("Error fetching all parking sessions: {}",
-                                                e.getMessage()));
+                // Try Redis first, fallback to DB
+                return redisStateService.getAllSessions()
+                        .map(this::toParkingSessionDto)
+                        .switchIfEmpty(sessionRepository.findAll())
+                        .doOnComplete(() -> LOGGER.debug("Fetched all parking sessions successfully"))
+                        .doOnError(e -> LOGGER.error("Error fetching all parking sessions: {}",
+                                        e.getMessage()));
         }
 
         public Mono<ParkingSessionDto> getSessionById(Integer id) {
                 LOGGER.debug("Fetching parking session by id: {}", id);
-                return sessionRepository.findById(id)
-                                .doOnSuccess(dto -> LOGGER.debug("Fetched parking session: {}", dto))
-                                .doOnError(e -> LOGGER.error("Error fetching parking session by id {}: {}", id,
-                                                e.getMessage()));
+                // Try Redis first, fallback to DB
+                return redisStateService.getSession(id)
+                        .map(this::toParkingSessionDto)
+                        .switchIfEmpty(sessionRepository.findById(id))
+                        .doOnSuccess(dto -> LOGGER.debug("Fetched parking session: {}", dto))
+                        .doOnError(e -> LOGGER.error("Error fetching parking session by id {}: {}", id,
+                                        e.getMessage()));
         }
 
         public Flux<ParkingSessionResponseDto> getAllSessionsWithDetails() {
@@ -201,16 +243,24 @@ public class ParkingSessionService {
                                         new IllegalArgumentException("Session status cannot be empty."));
                 }
 
+                String normalizedStatus = status.trim().toUpperCase();
+
                 return sessionRepository
                                 .updateStatusWithOptimisticLock(
                                                 id,
-                                                status.trim().toUpperCase(),
+                                                normalizedStatus,
                                                 currentVersion)
                                 .flatMap(rowsUpdated -> {
                                         if (rowsUpdated > 0) {
 
-                                                broadcastSessionUpdated(id, status.trim().toUpperCase());
-                                                return Mono.just(rowsUpdated);
+                                                broadcastSessionUpdated(id, normalizedStatus);
+                                                
+                                                // Increment version and update Redis
+                                                return redisStateService.incrementVersion("session", id.toString())
+                                                        .flatMap(version -> redisStateService.updateSessionStatus(id, normalizedStatus, version)
+                                                                .then(eventPublisher.publishSessionStatusChanged(
+                                                                        toSessionEventPayload(id, normalizedStatus), version)))
+                                                        .thenReturn(rowsUpdated);
                                         } else {
                                                 return Mono.error(new IllegalStateException(
                                                                 "Concurrency conflict or session not found."));
@@ -223,19 +273,67 @@ public class ParkingSessionService {
         }
 
         private void broadcastSessionUpdated(Integer sessionId, String newStatus) {
-                sessionRepository.findByIdWithDetails(sessionId)
-                                .subscribe(responseDto -> {
-                                        if (responseDto != null) {
-                                                ActiveSessionDto activeSession = new ActiveSessionDto(
-                                                                "#SN-" + responseDto.sessionId(),
-                                                                responseDto.vehicleNumber(),
-                                                                responseDto.vehicleNumber(),
-                                                                responseDto.slotDisplayCode(),
-                                                                newStatus,
-                                                                responseDto.actualEntryTime(),
-                                                                responseDto.durationMinutes());
-                                                ;
-                                        }
-                                });
+                LOGGER.debug("Session {} updated to status {}", sessionId, newStatus);
+        }
+
+        private SessionEventPayload toSessionEventPayload(ParkingSessionDto dto) {
+                return new SessionEventPayload(
+                        dto.sessionId(),
+                        dto.reservationId(),
+                        dto.slotId(),
+                        dto.userId(),
+                        dto.vehicleId(),
+                        dto.entryGateId(),
+                        dto.exitGateId(),
+                        dto.sessionStatus(),
+                        dto.actualEntryTime(),
+                        dto.actualExitTime(),
+                        dto.expectedExitTime(),
+                        dto.durationMinutes(),
+                        dto.paymentStatus(),
+                        dto.sessionVersion(),
+                        LocalDateTime.now()
+                );
+        }
+
+        private SessionEventPayload toSessionEventPayload(Integer sessionId, String status) {
+                return new SessionEventPayload(
+                        sessionId,
+                        null, // reservationId
+                        null, // slotId
+                        null, // userId
+                        null, // vehicleId
+                        null, // entryGateId
+                        null, // exitGateId
+                        status,
+                        null, // actualEntryTime
+                        null, // actualExitTime
+                        null, // expectedExitTime
+                        null, // durationMinutes
+                        null, // paymentStatus
+                        null, // sessionVersion
+                        LocalDateTime.now()
+                );
+        }
+
+        private ParkingSessionDto toParkingSessionDto(SessionEventPayload payload) {
+                return new ParkingSessionDto(
+                        payload.sessionId(),
+                        payload.reservationId(),
+                        payload.slotId(),
+                        payload.userId(),
+                        payload.vehicleId(),
+                        payload.entryGateId(),
+                        payload.exitGateId(),
+                        payload.sessionStatus(),
+                        payload.actualEntryTime(),
+                        payload.actualExitTime(),
+                        payload.expectedExitTime(),
+                        payload.durationMinutes(),
+                        payload.paymentStatus(),
+                        payload.sessionVersion(),
+                        payload.updatedAt(),
+                        payload.updatedAt()
+                );
         }
 }
