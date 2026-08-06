@@ -33,13 +33,14 @@ public class ParkingSessionController {
     }
 
     @PostMapping
+    public Mono<ResponseEntity<Integer>> create(@RequestBody ParkingSessionDto dto) {
 
-    public Mono<ResponseEntity<String>> create(@RequestBody ParkingSessionDto dto) {
         LOGGER.info("Creating parking session: {}", dto);
+
         return service.createSession(dto)
-                .map(rows -> ResponseEntity.status(HttpStatus.CREATED).body("Parking session initiated successfully."))
+                .map(sessionId -> ResponseEntity.status(HttpStatus.CREATED).body(sessionId))
                 .onErrorResume(IllegalArgumentException.class,
-                        e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                        e -> Mono.just(ResponseEntity.badRequest().build()));
     }
 
     @GetMapping

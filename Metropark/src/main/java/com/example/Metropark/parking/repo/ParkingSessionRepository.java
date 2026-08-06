@@ -24,21 +24,42 @@ public class ParkingSessionRepository {
         }
 
         public Mono<Integer> create(ParkingSessionDto dto) {
-                return Mono.from(dsl.insertInto(table("parking_sessions"))
-                                .columns(
-                                                field("reservation_id"), field("slot_id"), field("user_id"),
-                                                field("vehicle_id"), field("entry_gate_id"), field("exit_gate_id"),
-                                                field("session_status"), field("actual_entry_time"),
-                                                field("actual_exit_time"),
-                                                field("expected_exit_time"), field("duration_minutes"),
-                                                field("payment_status"),
-                                                field("session_version"), field("created_at"), field("updated_at"))
-                                .values(
-                                                dto.reservationId(), dto.slotId(), dto.userId(),
-                                                dto.vehicleId(), dto.entryGateId(), dto.exitGateId(),
-                                                dto.sessionStatus(), dto.actualEntryTime(), dto.actualExitTime(),
-                                                dto.expectedExitTime(), dto.durationMinutes(), dto.paymentStatus(),
-                                                dto.sessionVersion(), dto.createdAt(), dto.updatedAt()));
+                return Mono.from(
+                                dsl.insertInto(table("parking_sessions"))
+                                                .columns(
+                                                                field("reservation_id"),
+                                                                field("slot_id"),
+                                                                field("user_id"),
+                                                                field("vehicle_id"),
+                                                                field("entry_gate_id"),
+                                                                field("exit_gate_id"),
+                                                                field("session_status"),
+                                                                field("actual_entry_time"),
+                                                                field("actual_exit_time"),
+                                                                field("expected_exit_time"),
+                                                                field("duration_minutes"),
+                                                                field("payment_status"),
+                                                                field("session_version"),
+                                                                field("created_at"),
+                                                                field("updated_at"))
+                                                .values(
+                                                                dto.reservationId(),
+                                                                dto.slotId(),
+                                                                dto.userId(),
+                                                                dto.vehicleId(),
+                                                                dto.entryGateId(),
+                                                                dto.exitGateId(),
+                                                                dto.sessionStatus(),
+                                                                dto.actualEntryTime(),
+                                                                dto.actualExitTime(),
+                                                                dto.expectedExitTime(),
+                                                                dto.durationMinutes(),
+                                                                dto.paymentStatus(),
+                                                                dto.sessionVersion(),
+                                                                dto.createdAt(),
+                                                                dto.updatedAt())
+                                                .returning(field("session_id")))
+                                .map(record -> (Integer) record.get(field("session_id")));
         }
 
         public Flux<ParkingSessionDto> findAll() {
