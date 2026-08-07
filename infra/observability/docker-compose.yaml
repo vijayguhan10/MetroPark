@@ -1,28 +1,106 @@
-version: "3.8"
-
 services:
+  # ---------------------------------------------------------------------------
+  # Traces backend. Receives OTLP from the collector on the internal network;
+  # host ports 4317/4318 belong to the collector, which is the app's entrypoint.
+  # ---------------------------------------------------------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    container_name: jaeger
+    # The image runs as UID 10001, which cannot create the badger directories
+    # inside a root-owned named volume. Root is fine for a local dev stack.
+    user: root
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14269:14269" # Jaeger admin/metrics (scraped by Prometheus)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+    networks:
+      - observability_network
+    volumes:
+      - jaeger_data:/badger
+
+  # ---------------------------------------------------------------------------
+  # Single OTLP entrypoint for the application. Fans traces out to Jaeger and
+  # publishes OTLP metrics + span-derived RED metrics for Prometheus to scrape.
+  # ---------------------------------------------------------------------------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.115.1
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    ports:
+      - "4317:4317" # OTLP gRPC (from the app)
+      - "4318:4318" # OTLP HTTP (from the app)
+      - "8889:8889" # Prometheus exporter (pipeline metrics)
+      - "8888:8888" # Collector self-telemetry
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    networks:
+      - observability_network
+    depends_on:
+      - jaeger
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+      # Required for exemplar-based trace links from Grafana panels.
+      - "--enable-feature=exemplar-storage"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - observability_network
+
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:3.3.2
     container_name: loki
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
     networks:
-      - loki_network
+      - observability_network
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     container_name: grafana
     ports:
       - "3000:3000"
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceToMetrics
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
     networks:
-      - loki_network
+      - observability_network
     depends_on:
+      - prometheus
+      - jaeger
       - loki
 
 networks:
-  loki_network:
+  observability_network:
     driver: bridge
+
+volumes:
+  jaeger_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:

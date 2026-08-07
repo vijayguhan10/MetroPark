@@ -48,10 +48,13 @@ if errorlevel 1 exit /b %ERRORLEVEL%
 call :run_compose redis up -d !EXTRA_ARGS!
 if errorlevel 1 exit /b %ERRORLEVEL%
 call :run_compose postgres up -d !EXTRA_ARGS!
+if errorlevel 1 exit /b %ERRORLEVEL%
+call :run_compose observability up -d !EXTRA_ARGS!
 exit /b %ERRORLEVEL%
 
 :down
 rem Stop infra services (reverse order is a bit nicer)
+call :run_compose observability down !EXTRA_ARGS!
 call :run_compose postgres down !EXTRA_ARGS!
 call :run_compose redis down !EXTRA_ARGS!
 call :run_compose rabbitmq down !EXTRA_ARGS!

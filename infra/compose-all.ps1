@@ -44,19 +44,22 @@ function Invoke-Compose {
     )
     
     $TargetDir = Join-Path $RepoRoot "infra\$ServiceDir"
-    
+
     try {
         Push-Location $TargetDir -ErrorAction Stop
+
+        # The observability stack uses docker-compose.yaml; the rest use .yml.
+        $ComposeFile = if (Test-Path "docker-compose.yml") { "docker-compose.yml" } else { "docker-compose.yaml" }
 
         # Standardize args into a clean string array for execution
         if ($Action -eq "up") {
             $FullArgs = @("up", "-d")
             if ($AdditionalArgs -and $AdditionalArgs.Count -gt 0) { $FullArgs += $AdditionalArgs }
-            docker compose --file docker-compose.yml $FullArgs
+            docker compose --file $ComposeFile $FullArgs
         } else {
             $FullArgs = @("down")
             if ($AdditionalArgs -and $AdditionalArgs.Count -gt 0) { $FullArgs += $AdditionalArgs }
-            docker compose --file docker-compose.yml $FullArgs
+            docker compose --file $ComposeFile $FullArgs
         }
 
         return $LASTEXITCODE
@@ -71,7 +74,7 @@ switch -Exact ($Cmd.ToLower()) {
     "up" {
         Write-Host "Starting infrastructure services..." -ForegroundColor Green
         
-        $Services = @("kafka", "rabbitmq", "redis", "postgres")
+        $Services = @("kafka", "rabbitmq", "redis", "postgres", "observability")
         foreach ($Service in $Services) {
             $Ec = Invoke-Compose -ServiceDir $Service -Action "up" -AdditionalArgs $ExtraArgs
             if ($Ec -ne 0) { exit $Ec }
@@ -81,8 +84,8 @@ switch -Exact ($Cmd.ToLower()) {
     "down" {
         Write-Host "Stopping infrastructure services..." -ForegroundColor Yellow
         
-        # Stops in reverse order: postgres, redis, rabbitmq, kafka
-        $Services = @("postgres", "redis", "rabbitmq", "kafka")
+        # Stops in reverse order: observability, postgres, redis, rabbitmq, kafka
+        $Services = @("observability", "postgres", "redis", "rabbitmq", "kafka")
         foreach ($Service in $Services) {
             Invoke-Compose -ServiceDir $Service -Action "down" -AdditionalArgs $ExtraArgs
         }

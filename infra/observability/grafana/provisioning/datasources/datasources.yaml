@@ -1,0 +1,66 @@
+apiVersion: 1
+
+# UIDs are pinned so the cross-datasource links below (and the provisioned
+# dashboard) resolve deterministically on a fresh Grafana volume.
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger
+
+  - name: Jaeger
+    uid: jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: false
+    jsonData:
+      # Trace -> Logs: jump from a span to the Loki lines carrying its traceID.
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: true
+        # $$ escapes the provisioner's own variable interpolation, which would
+        # otherwise expand ${__span.traceId} to an empty string and leave a
+        # query that matches every log line.
+        query: '{app="metropark"} |= "traceID=$${__span.traceId}"'
+      # Trace -> Metrics: span-derived RED metrics from the collector.
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        queries:
+          - name: "Request rate"
+            query: 'sum(rate(traces_span_metrics_calls_total{span_name="$$__span.name"}[$$__rate_interval]))'
+          - name: "p95 duration"
+            query: 'histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name="$$__span.name"}[$$__rate_interval])))'
+      nodeGraph:
+        enabled: true
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
+      # Logs -> Trace: the logback pattern emits `traceID=<32 hex>`.
+      derivedFields:
+        - name: traceID
+          matcherRegex: "traceID=([0-9a-f]+)"
+          url: "$${__value.raw}"
+          datasourceUid: jaeger
+          urlDisplayLabel: "View trace"
