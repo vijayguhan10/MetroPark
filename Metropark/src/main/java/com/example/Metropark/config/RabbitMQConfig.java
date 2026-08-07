@@ -7,7 +7,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +26,7 @@ public class RabbitMQConfig {
     public static final String SESSION_EVENTS_QUEUE = "parking.session.events";
     public static final String PAYMENT_EVENTS_QUEUE = "parking.payment.events";
     public static final String CAMERA_EVENTS_QUEUE = "parking.camera.events.queue";
-    
+
     // Dead Letter Queue names
     public static final String SLOT_EVENTS_DLQ = "parking.slot.events.dlq";
     public static final String RESERVATION_EVENTS_DLQ = "parking.reservation.events.dlq";
@@ -162,7 +162,8 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding reservationCancelledBinding() {
-        return BindingBuilder.bind(reservationEventsQueue()).to(parkingEventsExchange()).with(RESERVATION_CANCELLED_KEY);
+        return BindingBuilder.bind(reservationEventsQueue()).to(parkingEventsExchange())
+                .with(RESERVATION_CANCELLED_KEY);
     }
 
     @Bean
@@ -201,12 +202,11 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(cameraEventsQueue()).to(cameraEventsExchange()).with(CAMERA_CAR_EXITED_KEY);
     }
 
-    // Listener container factory for manual acknowledgment
     @Bean
-    public SimpleMessageListenerContainer messageListenerContainer(ConnectionFactory connectionFactory) {
-        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-        container.setAcknowledgeMode(org.springframework.amqp.core.AcknowledgeMode.MANUAL);
-        container.setDefaultRequeueRejected(false);
-        return container;
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setDefaultRequeueRejected(false);
+        return factory;
     }
 }

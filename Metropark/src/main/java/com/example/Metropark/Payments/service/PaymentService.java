@@ -27,13 +27,13 @@ public class PaymentService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PaymentService.class);
 
     private static final Set<String> ALLOWED_STATUSES = Set.of(
-            "PENDING", "PROCESSING", "SUCCESS", "FAILED", "CANCELLED", "REFUNDED");
-    private static final Set<String> FINAL_STATUSES = Set.of("SUCCESS", "FAILED", "CANCELLED", "REFUNDED");
+            "PENDING", "PROCESSING", "PAID", "FAILED", "CANCELLED", "REFUNDED");
+    private static final Set<String> FINAL_STATUSES = Set.of("PAID", "FAILED", "CANCELLED", "REFUNDED");
     private static final Set<String> ALLOWED_CHANGED_BY = Set.of("USER", "SYSTEM", "GATEWAY", "ADMIN");
     private static final Map<String, Set<String>> STATUS_TRANSITIONS = Map.of(
-            "PENDING", Set.of("PROCESSING", "SUCCESS", "FAILED", "CANCELLED"),
-            "PROCESSING", Set.of("SUCCESS", "FAILED", "CANCELLED"),
-            "SUCCESS", Set.of("REFUNDED"),
+            "PENDING", Set.of("PROCESSING", "PAID", "FAILED", "CANCELLED"),
+            "PROCESSING", Set.of("PAID", "FAILED", "CANCELLED"),
+            "PAID", Set.of("REFUNDED"),
             "FAILED", Set.of(),
             "CANCELLED", Set.of(),
             "REFUNDED", Set.of());
@@ -119,15 +119,16 @@ public class PaymentService {
                                                     dtoWithUserId.gatewayResponseMessage(),
                                                     dtoWithUserId.processedAt(),
                                                     dtoWithUserId.createdAt(),
-                                                    dtoWithUserId.updatedAt()
-                                            );
-                                            
+                                                    dtoWithUserId.updatedAt());
+
                                             long version = 1;
-                                            
+
                                             // Save to Redis
                                             return redisStateService.savePayment(savedPayment, version)
-                                                    .then(redisStateService.incrementVersion("payment", paymentId.toString()))
-                                                    .then(eventPublisher.publishPaymentCompleted(toPaymentEventPayload(savedPayment), version))
+                                                    .then(redisStateService.incrementVersion("payment",
+                                                            paymentId.toString()))
+                                                    .then(eventPublisher.publishPaymentCompleted(
+                                                            toPaymentEventPayload(savedPayment), version))
                                                     .thenReturn(paymentId);
                                         })
                                         .doOnSuccess(rows -> {
@@ -232,7 +233,8 @@ public class PaymentService {
                             .flatMap(rows -> {
                                 // Increment version and update Redis
                                 return redisStateService.incrementVersion("payment", id.toString())
-                                        .flatMap(version -> redisStateService.updatePaymentStatus(id, normalizedStatus, version)
+                                        .flatMap(version -> redisStateService
+                                                .updatePaymentStatus(id, normalizedStatus, version)
                                                 .then(eventPublisher.publishPaymentCompleted(
                                                         toPaymentEventPayload(id, normalizedStatus), version)))
                                         .thenReturn(rows);
@@ -280,7 +282,8 @@ public class PaymentService {
                 : dto.transactionReference().trim();
 
         // if (normalizedReference == null) {
-        //     throw new IllegalArgumentException("Transaction reference is required for non-cash payments.");
+        // throw new IllegalArgumentException("Transaction reference is required for
+        // non-cash payments.");
         // }
 
         LocalDateTime now = LocalDateTime.now();
@@ -318,8 +321,7 @@ public class PaymentService {
                 dto.gatewayResponseCode(),
                 dto.gatewayResponseMessage(),
                 dto.processedAt(),
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
     }
 
     private PaymentEventPayload toPaymentEventPayload(Long paymentId, String status) {
@@ -335,8 +337,7 @@ public class PaymentService {
                 null, // gatewayResponseCode
                 null, // gatewayResponseMessage
                 null, // processedAt
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
     }
 
     private PaymentDto toPaymentDto(PaymentEventPayload payload) {
@@ -353,7 +354,6 @@ public class PaymentService {
                 payload.gatewayResponseMessage(),
                 payload.processedAt(),
                 payload.updatedAt(),
-                payload.updatedAt()
-        );
+                payload.updatedAt());
     }
 }

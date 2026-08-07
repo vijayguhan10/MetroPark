@@ -166,7 +166,7 @@ public class ParkingSessionRepository {
         public Mono<Boolean> hasActiveSession(Integer vehicleId) {
                 return Mono.from(dsl.selectFrom(table("parking_sessions"))
                                 .where(field("vehicle_id").eq(vehicleId))
-                                .and(field("session_status").in("CREATED", "ACTIVE"))
+                                .and(field("session_status").in("RESERVED", "CREATED", "ACTIVE"))
                                 .limit(1))
                                 .map(record -> true).defaultIfEmpty(false);
         }

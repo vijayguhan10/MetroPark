@@ -19,6 +19,8 @@ import com.example.Metropark.parking.dto.ParkingSlotDto;
 import com.example.Metropark.payments.dto.PaymentDto;
 import com.example.Metropark.reservation.dto.ReservationDto;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,6 +31,7 @@ public class RedisStateService {
 
         private final ReactiveRedisTemplate<String, Object> redisTemplate;
         private final ReactiveValueOperations<String, Object> valueOps;
+        private final ObjectMapper objectMapper;
 
         // Key prefixes
         private static final String SLOT_PREFIX = "parking:slot:";
@@ -42,9 +45,10 @@ public class RedisStateService {
         // TTL for keys (24 hours)
         private static final Duration DEFAULT_TTL = Duration.ofHours(24);
 
-        public RedisStateService(ReactiveRedisTemplate<String, Object> redisTemplate) {
+        public RedisStateService(ReactiveRedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
                 this.redisTemplate = redisTemplate;
                 this.valueOps = redisTemplate.opsForValue();
+                this.objectMapper = objectMapper;
         }
 
         // ==================== Parking Slot Operations ====================
@@ -74,7 +78,7 @@ public class RedisStateService {
         public Mono<SlotEventPayload> getSlot(Integer slotId) {
                 String key = SLOT_PREFIX + slotId;
                 return valueOps.get(key)
-                                .cast(SlotEventPayload.class)
+                                .map(this::toSlotEventPayload)
                                 .doOnError(e -> LOGGER.error("Error getting slot {} from Redis", slotId, e));
         }
 
@@ -124,7 +128,7 @@ public class RedisStateService {
 
         public Flux<SlotEventPayload> getAllSlots() {
                 return redisTemplate.keys(SLOT_PREFIX + "*")
-                                .flatMap(key -> valueOps.get(key).cast(SlotEventPayload.class))
+                                .flatMap(key -> valueOps.get(key).map(this::toSlotEventPayload))
                                 .doOnError(e -> LOGGER.error("Error getting all slots from Redis", e));
         }
 
@@ -157,7 +161,7 @@ public class RedisStateService {
         public Mono<ReservationEventPayload> getReservation(Integer reservationId) {
                 String key = RESERVATION_PREFIX + reservationId;
                 return valueOps.get(key)
-                                .cast(ReservationEventPayload.class)
+                                .map(this::toReservationEventPayload)
                                 .doOnError(e -> LOGGER.error("Error getting reservation {} from Redis", reservationId,
                                                 e));
         }
@@ -176,7 +180,7 @@ public class RedisStateService {
                 String versionKey = VERSION_PREFIX + "reservation:" + reservationId;
 
                 return valueOps.get(key)
-                                .cast(ReservationEventPayload.class)
+                                .map(this::toReservationEventPayload)
                                 .flatMap(existing -> {
                                         ReservationEventPayload updated = new ReservationEventPayload(
                                                         existing.reservationId(),
@@ -212,7 +216,7 @@ public class RedisStateService {
 
         public Flux<ReservationEventPayload> getAllReservations() {
                 return redisTemplate.keys(RESERVATION_PREFIX + "*")
-                                .flatMap(key -> valueOps.get(key).cast(ReservationEventPayload.class))
+                                .flatMap(key -> valueOps.get(key).map(this::toReservationEventPayload))
                                 .doOnError(e -> LOGGER.error("Error getting all reservations from Redis", e));
         }
 
@@ -251,7 +255,7 @@ public class RedisStateService {
         public Mono<SessionEventPayload> getSession(Integer sessionId) {
                 String key = SESSION_PREFIX + sessionId;
                 return valueOps.get(key)
-                                .cast(SessionEventPayload.class)
+                                .map(this::toSessionEventPayload)
                                 .doOnError(e -> LOGGER.error("Error getting session {} from Redis", sessionId, e));
         }
 
@@ -269,7 +273,7 @@ public class RedisStateService {
                 String versionKey = VERSION_PREFIX + "session:" + sessionId;
 
                 return valueOps.get(key)
-                                .cast(SessionEventPayload.class)
+                                .map(this::toSessionEventPayload)
                                 .flatMap(existing -> {
                                         SessionEventPayload updated = new SessionEventPayload(
                                                         existing.sessionId(),
@@ -297,20 +301,20 @@ public class RedisStateService {
                                                 e));
         }
 
-    public Mono<Void> deleteSession(Integer sessionId) {
-        String key = SESSION_PREFIX + sessionId;
-        String versionKey = VERSION_PREFIX + "session:" + sessionId;
-        
-    return redisTemplate.delete(key)
-        .then(redisTemplate.delete(versionKey))
-        .doOnSuccess(v -> LOGGER.debug("Deleted session {} from Redis", sessionId))
-        .doOnError(e -> LOGGER.error("Error deleting session {} from Redis", sessionId, e))
-        .then();
-    }
+        public Mono<Void> deleteSession(Integer sessionId) {
+                String key = SESSION_PREFIX + sessionId;
+                String versionKey = VERSION_PREFIX + "session:" + sessionId;
+
+                return redisTemplate.delete(key)
+                                .then(redisTemplate.delete(versionKey))
+                                .doOnSuccess(v -> LOGGER.debug("Deleted session {} from Redis", sessionId))
+                                .doOnError(e -> LOGGER.error("Error deleting session {} from Redis", sessionId, e))
+                                .then();
+        }
 
         public Flux<SessionEventPayload> getAllSessions() {
                 return redisTemplate.keys(SESSION_PREFIX + "*")
-                                .flatMap(key -> valueOps.get(key).cast(SessionEventPayload.class))
+                                .flatMap(key -> valueOps.get(key).map(this::toSessionEventPayload))
                                 .doOnError(e -> LOGGER.error("Error getting all sessions from Redis", e));
         }
 
@@ -346,7 +350,7 @@ public class RedisStateService {
         public Mono<PaymentEventPayload> getPayment(Long paymentId) {
                 String key = PAYMENT_PREFIX + paymentId;
                 return valueOps.get(key)
-                                .cast(PaymentEventPayload.class)
+                                .map(this::toPaymentEventPayload)
                                 .doOnError(e -> LOGGER.error("Error getting payment {} from Redis", paymentId, e));
         }
 
@@ -364,7 +368,7 @@ public class RedisStateService {
                 String versionKey = VERSION_PREFIX + "payment:" + paymentId;
 
                 return valueOps.get(key)
-                                .cast(PaymentEventPayload.class)
+                                .map(this::toPaymentEventPayload)
                                 .flatMap(existing -> {
                                         PaymentEventPayload updated = new PaymentEventPayload(
                                                         existing.paymentId(),
@@ -402,8 +406,48 @@ public class RedisStateService {
 
         public Flux<PaymentEventPayload> getAllPayments() {
                 return redisTemplate.keys(PAYMENT_PREFIX + "*")
-                                .flatMap(key -> valueOps.get(key).cast(PaymentEventPayload.class))
+                                .flatMap(key -> valueOps.get(key).map(this::toPaymentEventPayload))
                                 .doOnError(e -> LOGGER.error("Error getting all payments from Redis", e));
+        }
+
+        private SlotEventPayload toSlotEventPayload(Object value) {
+                if (value == null) {
+                        return null;
+                }
+                if (value instanceof SlotEventPayload payload) {
+                        return payload;
+                }
+                return objectMapper.convertValue(value, SlotEventPayload.class);
+        }
+
+        private ReservationEventPayload toReservationEventPayload(Object value) {
+                if (value == null) {
+                        return null;
+                }
+                if (value instanceof ReservationEventPayload payload) {
+                        return payload;
+                }
+                return objectMapper.convertValue(value, ReservationEventPayload.class);
+        }
+
+        private SessionEventPayload toSessionEventPayload(Object value) {
+                if (value == null) {
+                        return null;
+                }
+                if (value instanceof SessionEventPayload payload) {
+                        return payload;
+                }
+                return objectMapper.convertValue(value, SessionEventPayload.class);
+        }
+
+        private PaymentEventPayload toPaymentEventPayload(Object value) {
+                if (value == null) {
+                        return null;
+                }
+                if (value instanceof PaymentEventPayload payload) {
+                        return payload;
+                }
+                return objectMapper.convertValue(value, PaymentEventPayload.class);
         }
 
         // ==================== Occupancy Operations ====================
@@ -455,7 +499,7 @@ public class RedisStateService {
         public Flux<CameraEventPayload> getRecentCameraEvents(int count) {
                 return redisTemplate.opsForList()
                                 .range(CAMERA_EVENTS_KEY, -count, -1)
-                                .cast(CameraEventPayload.class)
+                                .map(this::toCameraEventPayload)
                                 .doOnError(e -> LOGGER.error("Error getting recent camera events from Redis", e));
         }
 
@@ -478,5 +522,15 @@ public class RedisStateService {
                                 .defaultIfEmpty(0L)
                                 .doOnError(e -> LOGGER.error("Error getting version for {}:{}", entityType, entityId,
                                                 e));
+        }
+
+        private CameraEventPayload toCameraEventPayload(Object value) {
+                if (value == null) {
+                        return null;
+                }
+                if (value instanceof CameraEventPayload payload) {
+                        return payload;
+                }
+                return objectMapper.convertValue(value, CameraEventPayload.class);
         }
 }

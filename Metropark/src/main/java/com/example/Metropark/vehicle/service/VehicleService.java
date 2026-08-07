@@ -87,6 +87,13 @@ public class VehicleService {
                         error));
     }
 
+    public Mono<VehicleDto> getVehicleByNumber(String vehicleNumber) {
+        LOGGER.debug("Fetching vehicle by number: {}", vehicleNumber);
+        return repository.findByVehicleNumber(vehicleNumber)
+                .doOnSuccess(dto -> LOGGER.debug("Fetched vehicle: {}", dto))
+                .doOnError(e -> LOGGER.error("Error fetching vehicle by number {}: {}", vehicleNumber, e.getMessage()));
+    }
+
     @Transactional
     public Mono<Integer> toggleVehicleStatus(Integer id, Boolean isActive) {
         LOGGER.info("Toggling vehicle status id: {} to isActive: {}", id, isActive);

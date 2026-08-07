@@ -42,8 +42,9 @@ public class ParkingSlotRepository {
                                 dto.sensorId(),
                                 dto.currentStatus()
                         )
-
-        );
+                        .returning(field("slot_id"))
+        )
+        .map(record -> (Integer) record.get(field("slot_id")));
     }
 
     public Flux<ParkingSlotDto> findAll() {
