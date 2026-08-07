@@ -78,6 +78,63 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
+        <!-- Observability -->
+        <!-- Exposes /actuator/prometheus, which Prometheus scrapes. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- aspectjweaver, required by TracingAspect. Named spring-boot-starter-aop
+             prior to Spring Boot 4. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aspectj</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <!-- AbstractTimer keeps an org.LatencyUtils.PauseDetector field. Micrometer
+             tolerates the class being absent at runtime, but Spring's reflective
+             field scan of the Timer beans in MetricsConfig does not, and startup
+             fails with NoClassDefFoundError. Micrometer no longer pulls it in. -->
+        <dependency>
+            <groupId>org.latencyutils</groupId>
+            <artifactId>LatencyUtils</artifactId>
+            <version>2.0.3</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Bridges Micrometer Observation onto the OpenTelemetry SDK and
+             autoconfigures the OTLP span exporter from the management.otlp.*
+             properties.
+
+             Spring Boot 4 split spring-boot-actuator-autoconfigure into
+             per-technology modules, and tracing is no longer part of
+             spring-boot-starter-actuator. Depending only on
+             micrometer-tracing-bridge-otel + opentelemetry-exporter-otlp puts
+             the classes on the classpath but leaves no autoconfiguration to
+             build the exporter, so the application starts cleanly and silently
+             emits no spans at all. This starter pulls the autoconfiguration and
+             the bridge together. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+        <!-- Propagates the observation scope across reactive operators so spans
+             in Mono/Flux chains nest correctly instead of detaching. -->
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core-micrometer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>context-propagation</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jooq-test</artifactId>

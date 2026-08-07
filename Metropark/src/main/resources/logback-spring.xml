@@ -1,30 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- Standard Console Logging (so you can still see logs in your IDE) -->
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="metropark"/>
+    <springProperty scope="context" name="lokiUrl" source="loki.url"
+                    defaultValue="http://localhost:3100/loki/api/v1/push"/>
+
+    <!--
+      traceID/spanID come from the MDC that Micrometer Tracing populates. They
+      must appear in the message body (not only as labels) because the Grafana
+      Loki datasource pulls them out of the line with a derived-field regex to
+      build the "View trace" link into Jaeger.
+    -->
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [traceID=%X{traceId:-} spanID=%X{spanId:-}] %logger{36} - %msg%n"/>
+
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>${LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <!-- Loki Logging Appender -->
     <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
         <http>
-            <url>http://localhost:3100/loki/api/v1/push</url>
+            <url>${lokiUrl}</url>
         </http>
         <format>
-           <label>
-    <pattern>app=metropark,level=%level,logger=%logger</pattern>
+            <!--
+              Labels must stay low-cardinality: Loki builds one stream per
+              distinct label combination. logger= was previously a label, which
+              creates a stream per class; it lives in the message instead.
+            -->
+            <label>
+                <pattern>app=${appName},host=${HOSTNAME},level=%level</pattern>
+                <readMarkers>true</readMarkers>
             </label>
             <message>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <pattern>${LOG_PATTERN}</pattern>
             </message>
         </format>
+        <batchMaxItems>1000</batchMaxItems>
+        <batchTimeoutMs>5000</batchTimeoutMs>
     </appender>
 
-    <!-- Attach both appenders to the root logger -->
+    <!-- Keeps a startup failure in Loki from blocking application threads. -->
+    <appender name="LOKI_ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="LOKI"/>
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+
     <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-        <appender-ref ref="LOKI" />
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="LOKI_ASYNC"/>
     </root>
 </configuration>
