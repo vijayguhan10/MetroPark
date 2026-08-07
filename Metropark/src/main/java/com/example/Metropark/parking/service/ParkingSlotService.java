@@ -66,9 +66,13 @@ public class ParkingSlotService {
 
                     long version = 1;
 
-                    return redisStateService.saveSlot(savedDto, version)
-                            .then(redisStateService.incrementVersion("slot", slotId.toString()))
-                            .then(eventPublisher.publishSlotCreated(toSlotEventPayload(savedDto), version))
+                    // saveSlotState writes the version key to exactly `version`. The old
+                    // code additionally called incrementVersion, leaving Redis at 2 while
+                    // the event announced 1, so every consumer-side freshness check
+                    // (currentVersion < eventVersion) rejected the event it had just been
+                    // sent.
+                    return redisStateService.saveSlotState(toSlotEventPayload(savedDto), version)
+                            .flatMap(stored -> eventPublisher.publishSlotCreated(stored, version))
                             .thenReturn(slotId);
                 })
                 .doOnSuccess(slotId -> LOGGER.info("Parking slot created successfully, slot id: {}", slotId))
@@ -118,7 +122,13 @@ public class ParkingSlotService {
                 .doOnError(e -> LOGGER.error("Error fetching parking slot by id {}: {}", id, e.getMessage()));
     }
 
-    @Transactional
+    /**
+     * Redis first, then publish. No PostgreSQL write happens here at all - the
+     * consumer performs it once the event is delivered. Publishing the payload that
+     * Redis returned (rather than a hand-built stub with null locationId,
+     * displayCode and sensorId) is what stops the consumer from overwriting the
+     * cached slot with nulls.
+     */
     public Mono<Integer> updateSlotStatus(Integer id, String status) {
         LOGGER.info("Updating parking slot status id: {} to status: {}", id, status);
         if (status == null || status.isBlank()) {
@@ -127,22 +137,36 @@ public class ParkingSlotService {
 
         String normalizedStatus = status.trim().toUpperCase();
 
-        return repository.updateStatus(id, normalizedStatus)
-                .flatMap(rowsUpdated -> {
-                    if (rowsUpdated == 0) {
-                        return Mono
-                                .error(new IllegalStateException("Update failed: Slot not found or status unchanged."));
-                    }
-
-                    // Increment version and update Redis
-                    return redisStateService.incrementVersion("slot", id.toString())
-                            .flatMap(version -> redisStateService.updateSlotStatus(id, normalizedStatus, version)
-                                    .then(eventPublisher.publishSlotUpdated(toSlotEventPayload(id, normalizedStatus),
-                                            version)))
-                            .thenReturn(rowsUpdated);
-                })
-                .doOnSuccess(rows -> LOGGER.info("Parking slot status updated successfully, rows affected: {}", rows))
+        return currentSlotPayload(id)
+                .switchIfEmpty(Mono.error(new IllegalStateException("Update failed: Slot not found.")))
+                .flatMap(existing -> redisStateService.incrementVersion("slot", id.toString())
+                        .flatMap(version -> redisStateService.saveSlotState(
+                                new SlotEventPayload(
+                                        existing.slotId(),
+                                        existing.locationId(),
+                                        existing.displayCode(),
+                                        existing.vehicleTypeId(),
+                                        existing.reservationClassId(),
+                                        existing.sensorId(),
+                                        normalizedStatus,
+                                        LocalDateTime.now()),
+                                version)
+                                // flatMap on the stored value: the publish cannot run
+                                // before the Redis write has completed successfully.
+                                .flatMap(stored -> eventPublisher.publishSlotUpdated(stored, version))
+                                .thenReturn(1)))
+                .doOnSuccess(rows -> LOGGER.info(
+                        "Parking slot {} set to {} in Redis and published for persistence", id, normalizedStatus))
                 .doOnError(e -> LOGGER.error("Error updating parking slot status id {}: {}", id, e.getMessage()));
+    }
+
+    /**
+     * Slot as the real-time store sees it, falling back to PostgreSQL the first time
+     * a slot is touched after startup so the static columns are never lost.
+     */
+    private Mono<SlotEventPayload> currentSlotPayload(Integer id) {
+        return redisStateService.getSlot(id)
+                .switchIfEmpty(repository.findById(id).map(this::toSlotEventPayload));
     }
 
     private SlotEventPayload toSlotEventPayload(ParkingSlotDto dto) {
@@ -157,17 +181,10 @@ public class ParkingSlotService {
                 LocalDateTime.now());
     }
 
-    private SlotEventPayload toSlotEventPayload(Integer slotId, String status) {
-        return new SlotEventPayload(
-                slotId,
-                null, // locationId - will be fetched from Redis if needed
-                null, // displayCode
-                null, // vehicleTypeId
-                null, // reservationClassId
-                null, // sensorId
-                status,
-                LocalDateTime.now());
-    }
+    // Removed: toSlotEventPayload(slotId, status). "will be fetched from Redis if
+    // needed" never happened - the consumer wrote this stub over the cached slot,
+    // discarding locationId, displayCode and sensorId. updateSlotStatus now merges
+    // onto the slot Redis already holds and publishes that.
 
     private ParkingSlotDto toParkingSlotDto(SlotEventPayload payload) {
         return new ParkingSlotDto(

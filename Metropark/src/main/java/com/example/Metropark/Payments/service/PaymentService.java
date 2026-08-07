@@ -61,7 +61,7 @@ public class PaymentService {
         this.eventPublisher = eventPublisher;
     }
 
-    @Transactional
+    // No @Transactional: Redis and RabbitMQ only; the consumer persists the row.
     public Mono<Integer> createPayment(PaymentDto dto) {
         LOGGER.info("Creating payment: {}", dto);
         PaymentDto cleanDto = normalize(dto, null);
@@ -103,11 +103,15 @@ public class PaymentService {
                                         cleanDto.processedAt(),
                                         cleanDto.createdAt(),
                                         cleanDto.updatedAt());
-                                return paymentRepository.create(dtoWithUserId)
+                                // Business logic -> Redis -> Redis success -> RabbitMQ publish.
+                                // The id comes from the PostgreSQL sequence without inserting a
+                                // row, so the consumer inserts under the id Redis already holds.
+                                return paymentRepository.allocatePaymentId()
                                         .flatMap(paymentId -> {
-                                            // Update the payment with the generated ID
-                                            PaymentDto savedPayment = new PaymentDto(
-                                                    paymentId.longValue(),
+                                            long version = INITIAL_VERSION;
+
+                                            PaymentEventPayload payload = new PaymentEventPayload(
+                                                    paymentId,
                                                     dtoWithUserId.transactionReference(),
                                                     dtoWithUserId.sessionId(),
                                                     dtoWithUserId.userId(),
@@ -118,22 +122,18 @@ public class PaymentService {
                                                     dtoWithUserId.gatewayResponseCode(),
                                                     dtoWithUserId.gatewayResponseMessage(),
                                                     dtoWithUserId.processedAt(),
-                                                    dtoWithUserId.createdAt(),
-                                                    dtoWithUserId.updatedAt());
+                                                    LocalDateTime.now());
 
-                                            long version = 1;
-
-                                            // Save to Redis
-                                            return redisStateService.savePayment(savedPayment, version)
-                                                    .then(redisStateService.incrementVersion("payment",
-                                                            paymentId.toString()))
-                                                    .then(eventPublisher.publishPaymentCompleted(
-                                                            toPaymentEventPayload(savedPayment), version))
-                                                    .thenReturn(paymentId);
+                                            return redisStateService.savePaymentState(payload, version)
+                                                    .flatMap(stored -> eventPublisher.publishPaymentCompleted(
+                                                            stored, version))
+                                                    .thenReturn(paymentId.intValue());
                                         })
-                                        .doOnSuccess(rows -> {
-                                            LOGGER.info("Payment created successfully, rows affected: {}", rows);
-                                            auditLogger.logPaymentCreated(dtoWithUserId, rows);
+                                        .doOnSuccess(paymentId -> {
+                                            LOGGER.info(
+                                                    "Payment {} written to Redis and published for persistence",
+                                                    paymentId);
+                                            auditLogger.logPaymentCreated(dtoWithUserId, paymentId);
                                         })
                                         .doOnError(e -> LOGGER.error("Error creating payment: {}", e.getMessage()));
                             });
@@ -179,7 +179,7 @@ public class PaymentService {
                         e -> LOGGER.error("Error fetching payments by session id {}: {}", sessionId, e.getMessage()));
     }
 
-    @Transactional
+    // No @Transactional: Redis and RabbitMQ only; the consumer persists the change.
     public Mono<Integer> updatePaymentStatus(Long id, PaymentStatusUpdateDto dto) {
         if (dto.status() == null || dto.status().isBlank()) {
             return Mono.error(new IllegalArgumentException("Payment status is required."));
@@ -198,7 +198,11 @@ public class PaymentService {
             return Mono.error(new IllegalArgumentException("changedBy must be USER, SYSTEM, GATEWAY, or ADMIN."));
         }
 
-        return paymentRepository.findById(id)
+        // The current status is read from Redis, the real-time store: a payment
+        // created moments ago may not be in PostgreSQL yet, and validating the
+        // transition against a stale row would reject a legitimate PENDING -> PAID.
+        return redisStateService.getPayment(id)
+                .switchIfEmpty(paymentRepository.findById(id).map(this::toPaymentEventPayload))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Payment not found.")))
                 .flatMap(existing -> {
 
@@ -212,37 +216,31 @@ public class PaymentService {
                             dto.gatewayReference());
 
                     return validateTransition(existing.paymentStatus(), normalizedStatus)
-                            .then(paymentRepository.updateStatus(
-                                    id,
-                                    existing.paymentStatus(),
-                                    normalizedStatus,
-                                    FINAL_STATUSES.contains(normalizedStatus) ? LocalDateTime.now()
-                                            : existing.processedAt(),
-                                    LocalDateTime.now())
-                                    .flatMap(rows -> rows == 0
-                                            ? Mono.error(new IllegalStateException(
-                                                    "Payment update failed due to a concurrent change."))
-                                            : Mono.fromRunnable(() -> auditLogger.logPaymentStatusUpdated(
+                            .then(redisStateService.incrementVersion("payment", id.toString()))
+                            .flatMap(version -> redisStateService
+                                    .updatePaymentStatus(id, normalizedStatus, version)
+                                    .switchIfEmpty(Mono.error(new IllegalStateException(
+                                            "Payment " + id + " is not present in the real-time store.")))
+                                    // Publish only after the Redis write has emitted, and
+                                    // publish exactly what it stored.
+                                    .flatMap(stored -> eventPublisher
+                                            .publishPaymentCompleted(stored, version)
+                                            .then(Mono.fromRunnable(() -> auditLogger.logPaymentStatusUpdated(
                                                     id,
                                                     existing.paymentStatus(),
                                                     normalizedStatus,
                                                     changedBy,
                                                     dto.reason(),
-                                                    dto.gatewayReference()))
-                                                    .thenReturn(rows)))
-                            .flatMap(rows -> {
-                                // Increment version and update Redis
-                                return redisStateService.incrementVersion("payment", id.toString())
-                                        .flatMap(version -> redisStateService
-                                                .updatePaymentStatus(id, normalizedStatus, version)
-                                                .then(eventPublisher.publishPaymentCompleted(
-                                                        toPaymentEventPayload(id, normalizedStatus), version)))
-                                        .thenReturn(rows);
-                            });
+                                                    dto.gatewayReference())))))
+                            .thenReturn(1);
                 })
-                .doOnSuccess(rows -> LOGGER.info("Payment status updated successfully, rows affected: {}", rows))
+                .doOnSuccess(rows -> LOGGER.info(
+                        "Payment {} set to {} in Redis and published for persistence", id, normalizedStatus))
                 .doOnError(e -> LOGGER.error("Error updating payment status id {}: {}", id, e.getMessage()));
     }
+
+    /** First version assigned to a payment. */
+    private static final long INITIAL_VERSION = 1L;
 
     private Mono<Void> validateTransition(String currentStatus, String nextStatus) {
         String current = currentStatus == null ? "PENDING" : currentStatus.trim().toUpperCase();
@@ -324,21 +322,10 @@ public class PaymentService {
                 LocalDateTime.now());
     }
 
-    private PaymentEventPayload toPaymentEventPayload(Long paymentId, String status) {
-        return new PaymentEventPayload(
-                paymentId,
-                null, // transactionReference
-                null, // sessionId
-                null, // userId
-                null, // methodId
-                null, // amount
-                null, // currency
-                status,
-                null, // gatewayResponseCode
-                null, // gatewayResponseMessage
-                null, // processedAt
-                LocalDateTime.now());
-    }
+    // Removed: toPaymentEventPayload(paymentId, status). Same defect as the session
+    // variant - publishing an all-null payload caused the consumer to overwrite the
+    // cached payment with nulls, losing sessionId, amount and userId. Status changes
+    // now publish the payload Redis returned.
 
     private PaymentDto toPaymentDto(PaymentEventPayload payload) {
         return new PaymentDto(

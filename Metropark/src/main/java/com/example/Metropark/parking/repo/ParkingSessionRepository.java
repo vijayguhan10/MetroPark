@@ -23,7 +23,66 @@ public class ParkingSessionRepository {
                 this.dsl = dsl;
         }
 
+        /**
+         * Reserves the primary key from the PostgreSQL identity sequence WITHOUT
+         * writing any row. Redis-first requires an id before the session exists in
+         * PostgreSQL; taking it from the real sequence guarantees the id Redis
+         * publishes is the same id the consumer inserts, and that it can never
+         * collide with a row inserted through the ordinary auto-increment path.
+         */
+        public Mono<Integer> allocateSessionId() {
+                return Mono.from(dsl.select(
+                                field("nextval(pg_get_serial_sequence('parking_sessions', 'session_id'))",
+                                                Long.class)))
+                                .map(record -> record.get(0, Long.class).intValue());
+        }
+
         public Mono<Integer> create(ParkingSessionDto dto) {
+                return create(dto, null);
+        }
+
+        public Mono<Integer> create(ParkingSessionDto dto, Integer explicitId) {
+                if (explicitId != null) {
+                        return Mono.from(
+                                        dsl.insertInto(table("parking_sessions"))
+                                                        .columns(
+                                                                        field("session_id"),
+                                                                        field("reservation_id"),
+                                                                        field("slot_id"),
+                                                                        field("user_id"),
+                                                                        field("vehicle_id"),
+                                                                        field("entry_gate_id"),
+                                                                        field("exit_gate_id"),
+                                                                        field("session_status"),
+                                                                        field("actual_entry_time"),
+                                                                        field("actual_exit_time"),
+                                                                        field("expected_exit_time"),
+                                                                        field("duration_minutes"),
+                                                                        field("payment_status"),
+                                                                        field("session_version"),
+                                                                        field("created_at"),
+                                                                        field("updated_at"))
+                                                        .values(
+                                                                        explicitId,
+                                                                        dto.reservationId(),
+                                                                        dto.slotId(),
+                                                                        dto.userId(),
+                                                                        dto.vehicleId(),
+                                                                        dto.entryGateId(),
+                                                                        dto.exitGateId(),
+                                                                        dto.sessionStatus(),
+                                                                        dto.actualEntryTime(),
+                                                                        dto.actualExitTime(),
+                                                                        dto.expectedExitTime(),
+                                                                        dto.durationMinutes(),
+                                                                        dto.paymentStatus(),
+                                                                        dto.sessionVersion(),
+                                                                        dto.createdAt(),
+                                                                        dto.updatedAt())
+                                                        .returning(field("session_id")))
+                                        .map(record -> (Integer) record.get(field("session_id")));
+                }
+
                 return Mono.from(
                                 dsl.insertInto(table("parking_sessions"))
                                                 .columns(
@@ -154,13 +213,74 @@ public class ParkingSessionRepository {
                                 .map(record -> record.into(ParkingSessionResponseDto.class));
         }
 
+        /**
+         * {@code defaultIfEmpty(0)} matters: when the WHERE clause matches nothing the
+         * reactive jOOQ publisher can complete without emitting, and a bare
+         * {@code flatMap} downstream would then be skipped entirely - the caller sees
+         * an empty Mono and concludes "success" for an update that affected no rows.
+         */
         public Mono<Integer> updateStatusWithOptimisticLock(Integer id, String status, Integer currentVersion) {
                 return Mono.from(dsl.update(table("parking_sessions"))
                                 .set(field("session_status"), status)
                                 .set(field("updated_at"), LocalDateTime.now())
                                 .set(field("session_version"), currentVersion + 1)
                                 .where(field("session_id").eq(id))
-                                .and(field("session_version").eq(currentVersion)));
+                                .and(field("session_version").eq(currentVersion)))
+                                .defaultIfEmpty(0);
+        }
+
+        /**
+         * Applies the full exit transition carried by a consumed event under an
+         * optimistic lock on {@code session_version}. Idempotent on redelivery: if the
+         * row already carries {@code newVersion} the second predicate matches and the
+         * update is a harmless no-op that still reports a row.
+         */
+        public Mono<Integer> applyExitWithOptimisticLock(
+                        Integer id,
+                        String status,
+                        String paymentStatus,
+                        LocalDateTime actualExitTime,
+                        Integer durationMinutes,
+                        Integer expectedVersion,
+                        Integer newVersion) {
+
+                return Mono.from(dsl.update(table("parking_sessions"))
+                                .set(field("session_status"), status)
+                                .set(field("payment_status"), paymentStatus)
+                                .set(field("actual_exit_time"), actualExitTime)
+                                .set(field("duration_minutes"), durationMinutes)
+                                .set(field("session_version"), newVersion)
+                                .set(field("updated_at"), LocalDateTime.now())
+                                .where(field("session_id").eq(id))
+                                .and(field("session_version").in(expectedVersion, newVersion)))
+                                .defaultIfEmpty(0);
+        }
+
+        public Mono<Boolean> existsById(Integer id) {
+                return Mono.from(dsl.selectOne()
+                                .from(table("parking_sessions"))
+                                .where(field("session_id").eq(id)))
+                                .map(record -> true)
+                                .defaultIfEmpty(false);
+        }
+
+        /**
+         * The open session for a vehicle, if it has one.
+         *
+         * <p>
+         * This is how a camera exit finds what to close: the event carries a number
+         * plate, never a session id, so the session has to be looked up from the
+         * vehicle behind that plate. {@code unique_active_session_per_vehicle}
+         * guarantees at most one row matches CREATED or ACTIVE, so the newest-first
+         * ordering only matters for the RESERVED case.
+         */
+        public Mono<ParkingSessionDto> findActiveByVehicleId(Integer vehicleId) {
+                return Mono.from(dsl.selectFrom(table("parking_sessions"))
+                                .where(field("vehicle_id").eq(vehicleId))
+                                .and(field("session_status").in("RESERVED", "CREATED", "ACTIVE"))
+                                .orderBy(field("session_id").desc())
+                                .limit(1))
+                                .map(this::mapToDto);
         }
 
         public Mono<Boolean> hasActiveSession(Integer vehicleId) {

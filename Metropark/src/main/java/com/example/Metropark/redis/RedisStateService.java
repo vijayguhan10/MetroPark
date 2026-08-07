@@ -2,6 +2,7 @@ package com.example.Metropark.redis;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,15 @@ public class RedisStateService {
         // TTL for keys (24 hours)
         private static final Duration DEFAULT_TTL = Duration.ofHours(24);
 
+        /** Payment statuses that stamp processed_at and admit no further transition. */
+        private static final Set<String> FINAL_PAYMENT_STATUSES = Set.of("PAID", "FAILED", "REFUNDED");
+
+        /**
+         * Session statuses that still hold a slot. A vehicle in any of these is parked
+         * and must not be admitted again.
+         */
+        private static final Set<String> ACTIVE_SESSION_STATUSES = Set.of("RESERVED", "CREATED", "ACTIVE");
+
         public RedisStateService(ReactiveRedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
                 this.redisTemplate = redisTemplate;
                 this.valueOps = redisTemplate.opsForValue();
@@ -75,6 +85,26 @@ public class RedisStateService {
                                 .doOnError(e -> LOGGER.error("Error saving slot {} to Redis", slot.slotId(), e));
         }
 
+        /**
+         * Writes the slot exactly as given and echoes it back, so the caller can
+         * publish the state Redis actually stored instead of a hand-built stub. The
+         * version key is set to {@code version} rather than incremented - callers that
+         * want a new version call {@link #incrementVersion} first and pass the result,
+         * and a save that silently bumped the version on top of that would leave Redis
+         * one ahead of the event it is about to publish.
+         */
+        public Mono<SlotEventPayload> saveSlotState(SlotEventPayload payload, long version) {
+                String key = SLOT_PREFIX + payload.slotId();
+                String versionKey = VERSION_PREFIX + "slot:" + payload.slotId();
+
+                return valueOps.set(key, payload, DEFAULT_TTL)
+                                .then(valueOps.set(versionKey, version, DEFAULT_TTL))
+                                .thenReturn(payload)
+                                .doOnSuccess(stored -> LOGGER.debug("Saved slot {} to Redis with version {}",
+                                                payload.slotId(), version))
+                                .doOnError(e -> LOGGER.error("Error saving slot {} to Redis", payload.slotId(), e));
+        }
+
         public Mono<SlotEventPayload> getSlot(Integer slotId) {
                 String key = SLOT_PREFIX + slotId;
                 return valueOps.get(key)
@@ -82,20 +112,34 @@ public class RedisStateService {
                                 .doOnError(e -> LOGGER.error("Error getting slot {} from Redis", slotId, e));
         }
 
+        /**
+         * Just the status of a slot as the real-time store sees it. Callers deciding
+         * whether a slot can be handed out must ask Redis, not PostgreSQL: PostgreSQL
+         * still shows the pre-entry status until the consumer catches up, so the same
+         * slot would be handed to two vehicles.
+         */
+        public Mono<String> getSlotStatus(Integer slotId) {
+                return getSlot(slotId)
+                                .map(SlotEventPayload::currentStatus);
+        }
+
         public Mono<Long> getSlotVersion(Integer slotId) {
                 String versionKey = VERSION_PREFIX + "slot:" + slotId;
                 return valueOps.get(versionKey)
-                                .cast(Long.class)
+                                .map(RedisStateService::toVersion)
                                 .defaultIfEmpty(0L)
                                 .doOnError(e -> LOGGER.error("Error getting slot version {} from Redis", slotId, e));
         }
 
-        public Mono<Void> updateSlotStatus(Integer slotId, String status, long version) {
+        public Mono<SlotEventPayload> updateSlotStatus(Integer slotId, String status, long version) {
                 String key = SLOT_PREFIX + slotId;
                 String versionKey = VERSION_PREFIX + "slot:" + slotId;
 
+                // map(this::toSlotEventPayload), not cast(): Redis values are stored
+                // through a Jackson serialiser bound to Object, so a round-tripped slot
+                // comes back as a LinkedHashMap and the cast would fail at runtime.
                 return valueOps.get(key)
-                                .cast(SlotEventPayload.class)
+                                .map(this::toSlotEventPayload)
                                 .flatMap(existing -> {
                                         SlotEventPayload updated = new SlotEventPayload(
                                                         existing.slotId(),
@@ -108,7 +152,7 @@ public class RedisStateService {
                                                         java.time.LocalDateTime.now());
                                         return valueOps.set(key, updated, DEFAULT_TTL)
                                                         .then(valueOps.set(versionKey, version, DEFAULT_TTL))
-                                                        .then();
+                                                        .thenReturn(updated);
                                 })
                                 .doOnSuccess(v -> LOGGER.debug("Updated slot {} status to {} with version {}", slotId,
                                                 status, version))
@@ -169,7 +213,7 @@ public class RedisStateService {
         public Mono<Long> getReservationVersion(Integer reservationId) {
                 String versionKey = VERSION_PREFIX + "reservation:" + reservationId;
                 return valueOps.get(versionKey)
-                                .cast(Long.class)
+                                .map(RedisStateService::toVersion)
                                 .defaultIfEmpty(0L)
                                 .doOnError(e -> LOGGER.error("Error getting reservation version {} from Redis",
                                                 reservationId, e));
@@ -252,6 +296,20 @@ public class RedisStateService {
                                                 e));
         }
 
+        /** @see #saveSlotState(SlotEventPayload, long) */
+        public Mono<SessionEventPayload> saveSessionState(SessionEventPayload payload, long version) {
+                String key = SESSION_PREFIX + payload.sessionId();
+                String versionKey = VERSION_PREFIX + "session:" + payload.sessionId();
+
+                return valueOps.set(key, payload, DEFAULT_TTL)
+                                .then(valueOps.set(versionKey, version, DEFAULT_TTL))
+                                .thenReturn(payload)
+                                .doOnSuccess(stored -> LOGGER.debug("Saved session {} to Redis with version {}",
+                                                payload.sessionId(), version))
+                                .doOnError(e -> LOGGER.error("Error saving session {} to Redis", payload.sessionId(),
+                                                e));
+        }
+
         public Mono<SessionEventPayload> getSession(Integer sessionId) {
                 String key = SESSION_PREFIX + sessionId;
                 return valueOps.get(key)
@@ -262,13 +320,13 @@ public class RedisStateService {
         public Mono<Long> getSessionVersion(Integer sessionId) {
                 String versionKey = VERSION_PREFIX + "session:" + sessionId;
                 return valueOps.get(versionKey)
-                                .cast(Long.class)
+                                .map(RedisStateService::toVersion)
                                 .defaultIfEmpty(0L)
                                 .doOnError(e -> LOGGER.error("Error getting session version {} from Redis", sessionId,
                                                 e));
         }
 
-        public Mono<Void> updateSessionStatus(Integer sessionId, String status, long version) {
+        public Mono<SessionEventPayload> updateSessionStatus(Integer sessionId, String status, long version) {
                 String key = SESSION_PREFIX + sessionId;
                 String versionKey = VERSION_PREFIX + "session:" + sessionId;
 
@@ -289,11 +347,16 @@ public class RedisStateService {
                                                         existing.expectedExitTime(),
                                                         existing.durationMinutes(),
                                                         existing.paymentStatus(),
-                                                        existing.sessionVersion() + 1,
+                                                        // sessionVersion must equal the version key, not
+                                                        // existing+1. The consumer derives its optimistic
+                                                        // lock from the version the event carries, so the
+                                                        // two drifting apart is what made the exit update
+                                                        // match zero rows.
+                                                        (int) version,
                                                         java.time.LocalDateTime.now());
                                         return valueOps.set(key, updated, DEFAULT_TTL)
                                                         .then(valueOps.set(versionKey, version, DEFAULT_TTL))
-                                                        .then();
+                                                        .thenReturn(updated);
                                 })
                                 .doOnSuccess(v -> LOGGER.debug("Updated session {} status to {} with version {}",
                                                 sessionId, status, version))
@@ -316,6 +379,26 @@ public class RedisStateService {
                 return redisTemplate.keys(SESSION_PREFIX + "*")
                                 .flatMap(key -> valueOps.get(key).map(this::toSessionEventPayload))
                                 .doOnError(e -> LOGGER.error("Error getting all sessions from Redis", e));
+        }
+
+        /**
+         * True when the real-time store holds a session for this vehicle that has not
+         * exited yet. Answers for sessions created since the cache warmed; the caller
+         * is expected to fall back to PostgreSQL for anything older.
+         */
+        public Mono<Boolean> hasActiveSession(Integer vehicleId) {
+                if (vehicleId == null) {
+                        return Mono.just(false);
+                }
+
+                return getAllSessions()
+                                .filter(session -> vehicleId.equals(session.vehicleId()))
+                                .filter(session -> session.sessionStatus() != null
+                                                && ACTIVE_SESSION_STATUSES
+                                                                .contains(session.sessionStatus().toUpperCase()))
+                                .hasElements()
+                                .doOnError(e -> LOGGER.error("Error checking active session for vehicle {} in Redis",
+                                                vehicleId, e));
         }
 
         // ==================== Payment Operations ====================
@@ -347,6 +430,20 @@ public class RedisStateService {
                                                 e));
         }
 
+        /** @see #saveSlotState(SlotEventPayload, long) */
+        public Mono<PaymentEventPayload> savePaymentState(PaymentEventPayload payload, long version) {
+                String key = PAYMENT_PREFIX + payload.paymentId();
+                String versionKey = VERSION_PREFIX + "payment:" + payload.paymentId();
+
+                return valueOps.set(key, payload, DEFAULT_TTL)
+                                .then(valueOps.set(versionKey, version, DEFAULT_TTL))
+                                .thenReturn(payload)
+                                .doOnSuccess(stored -> LOGGER.debug("Saved payment {} to Redis with version {}",
+                                                payload.paymentId(), version))
+                                .doOnError(e -> LOGGER.error("Error saving payment {} to Redis", payload.paymentId(),
+                                                e));
+        }
+
         public Mono<PaymentEventPayload> getPayment(Long paymentId) {
                 String key = PAYMENT_PREFIX + paymentId;
                 return valueOps.get(key)
@@ -357,13 +454,13 @@ public class RedisStateService {
         public Mono<Long> getPaymentVersion(Long paymentId) {
                 String versionKey = VERSION_PREFIX + "payment:" + paymentId;
                 return valueOps.get(versionKey)
-                                .cast(Long.class)
+                                .map(RedisStateService::toVersion)
                                 .defaultIfEmpty(0L)
                                 .doOnError(e -> LOGGER.error("Error getting payment version {} from Redis", paymentId,
                                                 e));
         }
 
-        public Mono<Void> updatePaymentStatus(Long paymentId, String status, long version) {
+        public Mono<PaymentEventPayload> updatePaymentStatus(Long paymentId, String status, long version) {
                 String key = PAYMENT_PREFIX + paymentId;
                 String versionKey = VERSION_PREFIX + "payment:" + paymentId;
 
@@ -381,11 +478,16 @@ public class RedisStateService {
                                                         status,
                                                         existing.gatewayResponseCode(),
                                                         existing.gatewayResponseMessage(),
-                                                        existing.processedAt(),
+                                                        // A payment reaching a terminal status is processed
+                                                        // now; keeping the old (usually null) processedAt
+                                                        // would leave every PAID row with no timestamp.
+                                                        FINAL_PAYMENT_STATUSES.contains(status)
+                                                                        ? java.time.LocalDateTime.now()
+                                                                        : existing.processedAt(),
                                                         java.time.LocalDateTime.now());
                                         return valueOps.set(key, updated, DEFAULT_TTL)
                                                         .then(valueOps.set(versionKey, version, DEFAULT_TTL))
-                                                        .then();
+                                                        .thenReturn(updated);
                                 })
                                 .doOnSuccess(v -> LOGGER.debug("Updated payment {} status to {} with version {}",
                                                 paymentId, status, version))
@@ -408,6 +510,18 @@ public class RedisStateService {
                 return redisTemplate.keys(PAYMENT_PREFIX + "*")
                                 .flatMap(key -> valueOps.get(key).map(this::toPaymentEventPayload))
                                 .doOnError(e -> LOGGER.error("Error getting all payments from Redis", e));
+        }
+
+        /**
+         * Version keys are read back as whatever Jackson inferred from the stored JSON
+         * number - Integer for anything under 2^31, and {@code increment()} writes a
+         * bare integer too. {@code cast(Long.class)} therefore threw
+         * ClassCastException on every version read, which the surrounding
+         * {@code doOnError} logged and swallowed, leaving the caller with an empty
+         * Mono that read as "no version".
+         */
+        private static Long toVersion(Object value) {
+                return value instanceof Number number ? number.longValue() : 0L;
         }
 
         private SlotEventPayload toSlotEventPayload(Object value) {
@@ -518,7 +632,7 @@ public class RedisStateService {
         public Mono<Long> getVersion(String entityType, String entityId) {
                 String versionKey = VERSION_PREFIX + entityType + ":" + entityId;
                 return valueOps.get(versionKey)
-                                .cast(Long.class)
+                                .map(RedisStateService::toVersion)
                                 .defaultIfEmpty(0L)
                                 .doOnError(e -> LOGGER.error("Error getting version for {}:{}", entityType, entityId,
                                                 e));

@@ -7,7 +7,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 import com.example.Metropark.config.RabbitMQConfig;
-import com.example.Metropark.event.payload.CameraEventPayload;
+import com.example.Metropark.event.payload.ParkingLifecycleEventPayload;
 import com.example.Metropark.event.payload.PaymentEventPayload;
 import com.example.Metropark.event.payload.ReservationEventPayload;
 import com.example.Metropark.event.payload.SessionEventPayload;
@@ -76,15 +76,31 @@ public class EventPublisher {
         return publish(RabbitMQConfig.PARKING_EVENTS_EXCHANGE, RabbitMQConfig.PAYMENT_FAILED_KEY, event);
     }
 
-    public Mono<Void> publishCameraCarEntered(CameraEventPayload payload) {
-        Event event = Event.of(RabbitMQConfig.CAMERA_CAR_ENTERED_KEY, payload.cameraId(), 1, payload);
-        return publish(RabbitMQConfig.CAMERA_EVENTS_EXCHANGE, RabbitMQConfig.CAMERA_CAR_ENTERED_KEY, event);
+    /**
+     * One vehicle entry: session CREATED, slot OCCUPIED, payment PENDING, applied
+     * by the consumer in a single PostgreSQL transaction.
+     */
+    public Mono<Void> publishVehicleEntry(ParkingLifecycleEventPayload payload, long version) {
+        Event event = Event.of(RabbitMQConfig.VEHICLE_ENTRY_KEY, payload.session().sessionId().toString(), version,
+                payload);
+        return publish(RabbitMQConfig.PARKING_EVENTS_EXCHANGE, RabbitMQConfig.VEHICLE_ENTRY_KEY, event);
     }
 
-    public Mono<Void> publishCameraCarExited(CameraEventPayload payload) {
-        Event event = Event.of(RabbitMQConfig.CAMERA_CAR_EXITED_KEY, payload.cameraId(), 1, payload);
-        return publish(RabbitMQConfig.CAMERA_EVENTS_EXCHANGE, RabbitMQConfig.CAMERA_CAR_EXITED_KEY, event);
+    /**
+     * One vehicle exit: session EXITED, slot AVAILABLE, payment SUCCESS, applied by
+     * the consumer in a single PostgreSQL transaction.
+     */
+    public Mono<Void> publishVehicleExit(ParkingLifecycleEventPayload payload, long version) {
+        Event event = Event.of(RabbitMQConfig.VEHICLE_EXIT_KEY, payload.session().sessionId().toString(), version,
+                payload);
+        return publish(RabbitMQConfig.PARKING_EVENTS_EXCHANGE, RabbitMQConfig.VEHICLE_EXIT_KEY, event);
     }
+
+    // Camera events are NOT published here. They carry their own envelope
+    // (com.example.Metropark.camera.event.CameraEvent) and go out through
+    // CameraEventPublisher, which persists the observation before announcing it.
+    // Wrapping them in Event as well gave every camera event two ids and two
+    // timestamps that could disagree.
 
     private Mono<Void> publish(String exchange, String routingKey, Event event) {
         return Mono.fromRunnable(() -> {

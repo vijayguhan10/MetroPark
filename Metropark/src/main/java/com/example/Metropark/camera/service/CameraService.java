@@ -9,10 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.Metropark.camera.dto.CameraDto;
+import com.example.Metropark.camera.event.CameraEvent;
+import com.example.Metropark.camera.event.CameraEventPublisher;
+import com.example.Metropark.camera.event.CameraEventType;
 import com.example.Metropark.camera.repo.CameraRepository;
-import com.example.Metropark.event.EventPublisher;
-import com.example.Metropark.event.payload.CameraEventPayload;
-import com.example.Metropark.redis.RedisStateService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,14 +25,11 @@ public class CameraService {
     private static final Set<String> ALLOWED_TYPES = Set.of("ENTRY", "EXIT", "OVERVIEW");
 
     private final CameraRepository repository;
-    private final RedisStateService redisStateService;
-    private final EventPublisher eventPublisher;
+    private final CameraEventPublisher cameraEventPublisher;
 
-    public CameraService(CameraRepository repository, RedisStateService redisStateService,
-            EventPublisher eventPublisher) {
+    public CameraService(CameraRepository repository, CameraEventPublisher cameraEventPublisher) {
         this.repository = repository;
-        this.redisStateService = redisStateService;
-        this.eventPublisher = eventPublisher;
+        this.cameraEventPublisher = cameraEventPublisher;
     }
 
     @Transactional
@@ -69,22 +66,12 @@ public class CameraService {
                 now,
                 now);
 
+        // Registering a camera emits no camera event. It used to publish a
+        // car.entered carrying the new camera's id and a null number plate, which
+        // meant "a car with no plate entered" - now that camera events actually
+        // drive parking, that would be an entry attempt for a car that does not
+        // exist.
         return repository.create(cleanDto)
-                .flatMap(cameraId -> {
-                    CameraDto savedDto = new CameraDto(
-                            cameraId,
-                            cleanDto.cameraName(),
-                            cleanDto.locationId(),
-                            cleanDto.cameraType(),
-                            cleanDto.status(),
-                            cleanDto.createdAt(),
-                            cleanDto.updatedAt());
-
-                    // Save to Redis
-                    return redisStateService.saveCameraEvent(toCameraEventPayload(savedDto))
-                            .then(eventPublisher.publishCameraCarEntered(toCameraEventPayload(savedDto)))
-                            .thenReturn(cameraId);
-                })
                 .doOnSuccess(cameraId -> LOGGER.info("Camera created successfully, camera id: {}", cameraId))
                 .doOnError(e -> LOGGER.error("Error creating camera: {}", e.getMessage()));
     }
@@ -145,15 +132,12 @@ public class CameraService {
                 dto.createdAt(),
                 now);
 
+        // As in createCamera: editing a camera's own record is not a car movement
+        // and must not be published as one.
         return repository.update(id, cleanDto)
-                .flatMap(rowsUpdated -> {
-                    if (rowsUpdated == 0) {
-                        return Mono.error(new IllegalStateException("Camera not found."));
-                    }
-                    return redisStateService.saveCameraEvent(toCameraEventPayload(cleanDto))
-                            .then(eventPublisher.publishCameraCarEntered(toCameraEventPayload(cleanDto)))
-                            .thenReturn(rowsUpdated);
-                })
+                .flatMap(rowsUpdated -> rowsUpdated == 0
+                        ? Mono.error(new IllegalStateException("Camera not found."))
+                        : Mono.just(rowsUpdated))
                 .doOnSuccess(rows -> LOGGER.info("Camera updated successfully, rows affected: {}", rows))
                 .doOnError(e -> LOGGER.error("Error updating camera id {}: {}", id, e.getMessage()));
     }
@@ -166,37 +150,31 @@ public class CameraService {
                 .doOnError(e -> LOGGER.error("Error deleting camera id {}: {}", id, e.getMessage()));
     }
 
+    /**
+     * A real camera reporting a car. Goes through the same
+     * {@link CameraEventPublisher} the simulator uses, so a hardware event and a
+     * simulated one are indistinguishable downstream and both drive parking.
+     *
+     * <p>
+     * vehicleId and userId are left null: a camera reads a plate and nothing else.
+     * {@link com.example.Metropark.camera.consumer.ParkingCameraConsumer} resolves
+     * the rest.
+     */
     public Mono<Void> captureEntryEvent(String licensePlate, String locationId, String cameraId) {
-        CameraEventPayload payload = new CameraEventPayload(
-                licensePlate,
-                locationId,
-                cameraId,
-                java.time.Instant.now());
-
-        return redisStateService.saveCameraEvent(payload)
-                .then(eventPublisher.publishCameraCarEntered(payload))
-                .doOnSuccess(v -> LOGGER.info("Camera entry event captured for license plate: {}", licensePlate))
-                .doOnError(e -> LOGGER.error("Error capturing camera entry event: {}", e.getMessage()));
+        return capture(CameraEventType.CAR_ENTERED, licensePlate, locationId, cameraId);
     }
 
     public Mono<Void> captureExitEvent(String licensePlate, String locationId, String cameraId) {
-        CameraEventPayload payload = new CameraEventPayload(
-                licensePlate,
-                locationId,
-                cameraId,
-                java.time.Instant.now());
-
-        return redisStateService.saveCameraEvent(payload)
-                .then(eventPublisher.publishCameraCarExited(payload))
-                .doOnSuccess(v -> LOGGER.info("Camera exit event captured for license plate: {}", licensePlate))
-                .doOnError(e -> LOGGER.error("Error capturing camera exit event: {}", e.getMessage()));
+        return capture(CameraEventType.CAR_EXITED, licensePlate, locationId, cameraId);
     }
 
-    private CameraEventPayload toCameraEventPayload(CameraDto dto) {
-        return new CameraEventPayload(
-                null, // licensePlate - not applicable for camera creation
-                dto.locationId(),
-                dto.cameraId().toString(),
-                java.time.Instant.now());
+    private Mono<Void> capture(CameraEventType type, String licensePlate, String locationId, String cameraId) {
+        return cameraEventPublisher
+                .recordAndPublish(CameraEvent.of(type, licensePlate, null, null, locationId, cameraId))
+                .doOnSuccess(event -> LOGGER.info("Camera {} captured for plate {} at {}",
+                        type, licensePlate, locationId))
+                .doOnError(e -> LOGGER.error("Error capturing camera {} event for plate {}",
+                        type, licensePlate, e))
+                .then();
     }
 }
