@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -m 5 -o /dev/null -w \"actuator/health: %{http_code}\\\\n\" http://localhost:8080/actuator/health)",
+      "Bash(curl -s -m 10 http://localhost:8080/actuator)",
+      "Bash(python -c \"import json,sys;print\\('  ',list\\(json.load\\(sys.stdin\\)['_links'].keys\\(\\)\\)\\)\")",
+      "Bash(taskkill //F //IM java.exe)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"health: %{http_code}\\\\n\" http://localhost:8080/actuator/health)",
+      "Bash(docker run *)",
+      "Bash(python -c ' *)",
+      "Bash(curl -s http://localhost:16686/api/services)",
+      "Bash(python -c \"import json,sys;print\\(' ',json.load\\(sys.stdin\\)['data']\\)\")",
+      "Bash(curl -s \"http://localhost:16686/api/services/metropark/operations\")",
+      "Bash(python -c \"import json,sys;d=json.load\\(sys.stdin\\)['data'];print\\('  count:',len\\(d\\)\\);[print\\('   ',o\\) for o in d[:15]]\")",
+      "Bash(curl -s http://localhost:8888/metrics)",
+      "Bash(curl -s -m 10 \"http://localhost:8080/actuator/metrics\")",
+      "Bash(python -c \"import json,sys;print\\([m for m in json.load\\(sys.stdin\\)['names'] if 'observ' in m or 'span' in m][:10]\\)\")",
+      "Bash(mvn -B -q dependency:get -Dartifact=org.springframework.boot:spring-boot-opentelemetry:4.1.0)",
+      "Read(//c/Users/vguhankm/.m2/repository/org/springframework/boot/**)",
+      "Bash(mvn -B -q dependency:get -Dartifact=org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry:4.1.0)",
+      "Bash(mvn -B -q dependency:tree -Dincludes=\"org.springframework.boot:spring-boot-micrometer*,io.micrometer:micrometer-tracing*\" -DoutputFile=/tmp/dt2.txt)",
+      "Bash(mvn -B -q dependency:list -DoutputFile=/tmp/dl.txt)"
+    ]
+  }
+}

@@ -23,7 +23,39 @@ public class PaymentRepository {
         this.dsl = dsl;
     }
 
+    /**
+     * Reserves the payment primary key from the PostgreSQL identity sequence without
+     * inserting a row, so Redis can hold the payment before the consumer persists it.
+     */
+    public Mono<Long> allocatePaymentId() {
+        return Mono.from(dsl.select(
+                field("nextval(pg_get_serial_sequence('payments', 'payment_id'))", Long.class)))
+                .map(record -> record.get(0, Long.class));
+    }
+
     public Mono<Integer> create(PaymentDto dto) {
+        return create(dto, null);
+    }
+
+    public Mono<Integer> create(PaymentDto dto, Long explicitId) {
+        if (explicitId != null) {
+            return Mono.from(dsl.insertInto(table("payments"))
+                    .columns(
+                            field("payment_id"), field("transaction_reference"), field("session_id"), field("user_id"),
+                            field("method_id"), field("amount"), field("currency"), field("payment_status"),
+                            field("gateway_response_code"), field("gateway_response_message"), field("processed_at"),
+                            field("created_at"), field("updated_at"))
+                    .values(
+                            explicitId, dto.transactionReference(), dto.sessionId(), dto.userId(),
+                            dto.methodId(), dto.amount(), dto.currency(), dto.paymentStatus(),
+                            dto.gatewayResponseCode(), dto.gatewayResponseMessage(), dto.processedAt(),
+                            dto.createdAt(), dto.updatedAt())
+                    .returning(field("payment_id")))
+                    // map() has to be applied to the Mono, not to the jOOQ
+                    // InsertResultStep - the latter has no such method and does not compile.
+                    .map(record -> record.get(field("payment_id"), Integer.class));
+        }
+
         return Mono.from(dsl.insertInto(table("payments"))
                 .columns(
                         field("transaction_reference"), field("session_id"), field("user_id"),
@@ -34,7 +66,9 @@ public class PaymentRepository {
                         dto.transactionReference(), dto.sessionId(), dto.userId(),
                         dto.methodId(), dto.amount(), dto.currency(), dto.paymentStatus(),
                         dto.gatewayResponseCode(), dto.gatewayResponseMessage(), dto.processedAt(),
-                        dto.createdAt(), dto.updatedAt()));
+                        dto.createdAt(), dto.updatedAt())
+                .returning(field("payment_id")))
+                .map(record -> record.get(field("payment_id"), Integer.class));
     }
 
     public Flux<PaymentDto> findAll() {
@@ -71,7 +105,37 @@ public class PaymentRepository {
                 .set(field("processed_at"), processedAt)
                 .set(field("updated_at"), updatedAt)
                 .where(field("payment_id").eq(id))
-                .and(field("payment_status").eq(expectedStatus)));
+                .and(field("payment_status").eq(expectedStatus)))
+                .defaultIfEmpty(0);
+    }
+
+    /**
+     * Persists the status decided at the Redis stage, keyed on the primary key only.
+     * The consumer is applying an already-validated transition, so re-checking the
+     * previous status here would reject legitimate redeliveries; a zero row count
+     * means the payment row genuinely does not exist and the message must be dead
+     * lettered rather than silently dropped.
+     */
+    public Mono<Integer> updateStatusById(
+            Long id,
+            String newStatus,
+            LocalDateTime processedAt,
+            LocalDateTime updatedAt) {
+
+        return Mono.from(dsl.update(table("payments"))
+                .set(field("payment_status"), newStatus)
+                .set(field("processed_at"), processedAt)
+                .set(field("updated_at"), updatedAt)
+                .where(field("payment_id").eq(id)))
+                .defaultIfEmpty(0);
+    }
+
+    public Mono<Boolean> existsById(Long id) {
+        return Mono.from(dsl.selectOne()
+                .from(table("payments"))
+                .where(field("payment_id").eq(id)))
+                .map(record -> true)
+                .defaultIfEmpty(false);
     }
 
     public Mono<Integer> updateGatewayResponse(
@@ -92,7 +156,8 @@ public class PaymentRepository {
                 .set(field("processed_at"), processedAt)
                 .set(field("updated_at"), updatedAt)
                 .where(field("payment_id").eq(id))
-                .and(field("payment_status").eq(expectedStatus)));
+                .and(field("payment_status").eq(expectedStatus)))
+                .defaultIfEmpty(0);
     }
 
     public Mono<Boolean> existsByTransactionReference(String transactionReference) {

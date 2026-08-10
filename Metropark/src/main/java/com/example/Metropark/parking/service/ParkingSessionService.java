@@ -8,15 +8,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.Metropark.event.EventPublisher;
+import com.example.Metropark.event.payload.ParkingLifecycleEventPayload;
 import com.example.Metropark.event.payload.SessionEventPayload;
 import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSessionResponseDto;
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
+import com.example.Metropark.redis.RedisStateService;
 import com.example.Metropark.reservation.repo.ReservationRepository;
 import com.example.Metropark.user.repo.UserRepository;
 import com.example.Metropark.vehicle.repo.VehicleRepository;
-import com.example.Metropark.redis.RedisStateService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -52,7 +53,9 @@ public class ParkingSessionService {
                 this.eventPublisher = eventPublisher;
         }
 
-        @Transactional
+        // No @Transactional: this method writes to Redis and RabbitMQ only. It was
+        // also a no-op here in any case - the DSLContext is built from the raw R2DBC
+        // ConnectionFactory and never joins Spring's reactive transaction.
         public Mono<Integer> createSession(ParkingSessionDto dto) {
 
                 LOGGER.info("Creating parking session: {}", dto);
@@ -68,13 +71,19 @@ public class ParkingSessionService {
                                                 ? Mono.<Void>empty()
                                                 : Mono.error(new IllegalStateException("Vehicle is inactive.")));
 
-                Mono<Void> slotValidation = slotRepository.findById(dto.slotId())
-                                .switchIfEmpty(Mono.error(new IllegalArgumentException("Parking slot not found.")))
-                                .flatMap(slot -> {
+                // Slot availability must be judged against Redis, the real-time store.
+                // PostgreSQL still shows the pre-entry status until the consumer catches
+                // up, so validating against it would hand the same slot to two vehicles.
+                Mono<Void> slotValidation = redisStateService.getSlotStatus(dto.slotId())
+                                .switchIfEmpty(slotRepository.findById(dto.slotId())
+                                                .switchIfEmpty(Mono.error(new IllegalArgumentException(
+                                                                "Parking slot not found.")))
+                                                .map(slot -> slot.currentStatus()))
+                                .flatMap(currentStatus -> {
 
                                         if (dto.reservationId() != null) {
 
-                                                if ("RESERVED".equalsIgnoreCase(slot.currentStatus())) {
+                                                if ("RESERVED".equalsIgnoreCase(currentStatus)) {
                                                         return Mono.empty();
                                                 }
 
@@ -82,12 +91,12 @@ public class ParkingSessionService {
                                                                 "Reserved session requires slot status RESERVED."));
                                         }
 
-                                        if ("AVAILABLE".equalsIgnoreCase(slot.currentStatus())) {
+                                        if ("AVAILABLE".equalsIgnoreCase(currentStatus)) {
                                                 return Mono.empty();
                                         }
 
                                         return Mono.error(new IllegalStateException(
-                                                        "Parking slot is " + slot.currentStatus()));
+                                                        "Parking slot is " + currentStatus));
                                 });
 
                 Mono<Void> userValidation = userRepository.findById(dto.userId())
@@ -96,7 +105,10 @@ public class ParkingSessionService {
                                                 ? Mono.<Void>empty()
                                                 : Mono.error(new IllegalStateException("User account is inactive.")));
 
-                Mono<Void> checkDuplicateSession = sessionRepository.hasActiveSession(dto.vehicleId())
+                // Same reasoning as the slot check: a session created a moment ago is still
+                // in flight to PostgreSQL, so the duplicate check consults Redis first and
+                // only falls back to PostgreSQL for sessions predating the current cache.
+                Mono<Void> checkDuplicateSession = hasActiveSession(dto.vehicleId())
                                 .flatMap(hasSession -> {
                                         if (hasSession) {
                                                 return Mono.error(new IllegalStateException(
@@ -153,64 +165,76 @@ public class ParkingSessionService {
                                                         now,
                                                         now);
 
-                                        return sessionRepository.create(session)
+                                        // Business logic -> Redis -> Redis success -> RabbitMQ publish.
+                                        // The id is reserved from the PostgreSQL sequence without writing
+                                        // a row, so Redis can hold the session before it is persisted and
+                                        // the consumer inserts under the very same id.
+                                        return sessionRepository.allocateSessionId()
                                                         .flatMap(sessionId -> {
-                                                            // Update the session with the generated ID
-                                                            ParkingSessionDto savedSession = new ParkingSessionDto(
-                                                                    sessionId,
-                                                                    session.reservationId(),
-                                                                    session.slotId(),
-                                                                    session.userId(),
-                                                                    session.vehicleId(),
-                                                                    session.entryGateId(),
-                                                                    session.exitGateId(),
-                                                                    session.sessionStatus(),
-                                                                    session.actualEntryTime(),
-                                                                    session.actualExitTime(),
-                                                                    session.expectedExitTime(),
-                                                                    session.durationMinutes(),
-                                                                    session.paymentStatus(),
-                                                                    session.sessionVersion(),
-                                                                    session.createdAt(),
-                                                                    session.updatedAt()
-                                                            );
-                                                            
-                                                            long version = 1;
-                                                            
-                                                            // Save to Redis
-                                                            return redisStateService.saveSession(savedSession, version)
-                                                                    .then(redisStateService.incrementVersion("session", sessionId.toString()))
-                                                                    .then(eventPublisher.publishSessionStarted(toSessionEventPayload(savedSession), version))
-                                                                    .thenReturn(sessionId);
+                                                                long version = INITIAL_VERSION;
+
+                                                                SessionEventPayload payload = new SessionEventPayload(
+                                                                                sessionId,
+                                                                                session.reservationId(),
+                                                                                session.slotId(),
+                                                                                session.userId(),
+                                                                                session.vehicleId(),
+                                                                                session.entryGateId(),
+                                                                                session.exitGateId(),
+                                                                                session.sessionStatus(),
+                                                                                session.actualEntryTime(),
+                                                                                session.actualExitTime(),
+                                                                                session.expectedExitTime(),
+                                                                                session.durationMinutes(),
+                                                                                session.paymentStatus(),
+                                                                                (int) version,
+                                                                                now);
+
+                                                                // flatMap (not then) so the publish is built from the
+                                                                // state Redis actually stored, and only runs once that
+                                                                // write has signalled completion.
+                                                                return redisStateService
+                                                                                .saveSessionState(payload, version)
+                                                                                .flatMap(stored -> eventPublisher
+                                                                                                .publishVehicleEntry(
+                                                                                                                new ParkingLifecycleEventPayload(
+                                                                                                                                stored,
+                                                                                                                                null,
+                                                                                                                                null,
+                                                                                                                                null,
+                                                                                                                                stored.sessionVersion()),
+                                                                                                                version))
+                                                                                .thenReturn(sessionId);
                                                         })
                                                         .doOnSuccess(sessionId -> LOGGER.info(
-                                                                        "Parking session created successfully. Session ID: {}",
-                                                                        sessionId))
+                                                                        "Parking session created successfully. Session ID: {}, version: {}",
+                                                                        sessionId, INITIAL_VERSION))
                                                         .doOnError(error -> LOGGER.error(
                                                                         "Error creating parking session", error));
                                 }));
         }
 
+
         public Flux<ParkingSessionDto> getAllSessions() {
                 LOGGER.debug("Fetching all parking sessions");
                 // Try Redis first, fallback to DB
                 return redisStateService.getAllSessions()
-                        .map(this::toParkingSessionDto)
-                        .switchIfEmpty(sessionRepository.findAll())
-                        .doOnComplete(() -> LOGGER.debug("Fetched all parking sessions successfully"))
-                        .doOnError(e -> LOGGER.error("Error fetching all parking sessions: {}",
-                                        e.getMessage()));
+                                .map(this::toParkingSessionDto)
+                                .switchIfEmpty(sessionRepository.findAll())
+                                .doOnComplete(() -> LOGGER.debug("Fetched all parking sessions successfully"))
+                                .doOnError(e -> LOGGER.error("Error fetching all parking sessions: {}",
+                                                e.getMessage()));
         }
 
         public Mono<ParkingSessionDto> getSessionById(Integer id) {
                 LOGGER.debug("Fetching parking session by id: {}", id);
                 // Try Redis first, fallback to DB
                 return redisStateService.getSession(id)
-                        .map(this::toParkingSessionDto)
-                        .switchIfEmpty(sessionRepository.findById(id))
-                        .doOnSuccess(dto -> LOGGER.debug("Fetched parking session: {}", dto))
-                        .doOnError(e -> LOGGER.error("Error fetching parking session by id {}: {}", id,
-                                        e.getMessage()));
+                                .map(this::toParkingSessionDto)
+                                .switchIfEmpty(sessionRepository.findById(id))
+                                .doOnSuccess(dto -> LOGGER.debug("Fetched parking session: {}", dto))
+                                .doOnError(e -> LOGGER.error("Error fetching parking session by id {}: {}", id,
+                                                e.getMessage()));
         }
 
         public Flux<ParkingSessionResponseDto> getAllSessionsWithDetails() {
@@ -222,6 +246,29 @@ public class ParkingSessionService {
                                                 e.getMessage()));
         }
 
+        public Flux<ParkingSessionDto> getAllSessionsFromDb() {
+                LOGGER.debug("Fetching all parking sessions directly from DB");
+                return sessionRepository.findAll()
+                                .doOnComplete(() -> LOGGER.debug("Fetched all parking sessions from DB successfully"))
+                                .doOnError(e -> LOGGER.error("Error fetching all parking sessions from DB: {}",
+                                                e.getMessage()));
+        }
+
+        /**
+         * Active-session check across both stores: Redis answers for sessions created
+         * since the cache warmed, PostgreSQL for anything older. Asking PostgreSQL
+         * alone would miss a session that has been written to Redis but whose event is
+         * still in the queue, and the same vehicle would be admitted twice.
+         */
+        public Mono<Boolean> hasActiveSession(Integer vehicleId) {
+                return redisStateService.hasActiveSession(vehicleId)
+                                .flatMap(activeInRedis -> activeInRedis
+                                                ? Mono.just(true)
+                                                : sessionRepository.hasActiveSession(vehicleId))
+                                .doOnError(e -> LOGGER.error("Error checking active session for vehicle {}: {}",
+                                                vehicleId, e.getMessage()));
+        }
+
         public Mono<ParkingSessionResponseDto> getSessionByIdWithDetails(Integer id) {
                 LOGGER.debug("Fetching parking session by id with details: {}", id);
                 return sessionRepository.findByIdWithDetails(id)
@@ -231,7 +278,8 @@ public class ParkingSessionService {
                                                 e.getMessage()));
         }
 
-        @Transactional
+        // No @Transactional: Redis and RabbitMQ only; PostgreSQL is written by the
+        // consumer, inside its own transaction.
         public Mono<Integer> updateSessionStatus(
                         Integer id,
                         String status,
@@ -245,32 +293,48 @@ public class ParkingSessionService {
 
                 String normalizedStatus = status.trim().toUpperCase();
 
-                return sessionRepository
-                                .updateStatusWithOptimisticLock(
-                                                id,
-                                                normalizedStatus,
-                                                currentVersion)
-                                .flatMap(rowsUpdated -> {
-                                        if (rowsUpdated > 0) {
+                // Optimistic lock is now evaluated against Redis, the real-time state, and
+                // re-checked against session_version by the consumer when it persists.
+                // The version travels on the event as `version`; the consumer derives the
+                // expected row version as version-1, so exactly one transition can win.
+                return getSessionById(id)
+                                .switchIfEmpty(Mono.error(new IllegalStateException(
+                                                "Concurrency conflict or session not found.")))
+                                .flatMap(existing -> {
+                                        int existingVersion = existing.sessionVersion() == null
+                                                        ? (int) INITIAL_VERSION
+                                                        : existing.sessionVersion();
 
-                                                broadcastSessionUpdated(id, normalizedStatus);
-                                                
-                                                // Increment version and update Redis
-                                                return redisStateService.incrementVersion("session", id.toString())
-                                                        .flatMap(version -> redisStateService.updateSessionStatus(id, normalizedStatus, version)
-                                                                .then(eventPublisher.publishSessionStatusChanged(
-                                                                        toSessionEventPayload(id, normalizedStatus), version)))
-                                                        .thenReturn(rowsUpdated);
-                                        } else {
-                                                return Mono.error(new IllegalStateException(
-                                                                "Concurrency conflict or session not found."));
+                                        if (currentVersion != null && !currentVersion.equals(existingVersion)) {
+                                                return Mono.<Integer>error(new IllegalStateException(
+                                                                "Concurrency conflict: expected session_version "
+                                                                                + currentVersion + " but real-time state is at "
+                                                                                + existingVersion + "."));
                                         }
+
+                                        long newVersion = existingVersion + 1L;
+
+                                        return redisStateService
+                                                        .updateSessionStatus(id, normalizedStatus, newVersion)
+                                                        .switchIfEmpty(Mono.error(new IllegalStateException(
+                                                                        "Session " + id
+                                                                                        + " is not present in the real-time store.")))
+                                                        .flatMap(stored -> {
+                                                                broadcastSessionUpdated(id, normalizedStatus);
+                                                                return eventPublisher.publishSessionStatusChanged(
+                                                                                stored, newVersion);
+                                                        })
+                                                        .thenReturn(1);
                                 })
                                 .doOnSuccess(rows -> LOGGER.info(
-                                                "Parking session status updated successfully, rows affected: {}", rows))
+                                                "Parking session {} status set to {} in Redis and published, accepted: {}",
+                                                id, normalizedStatus, rows))
                                 .doOnError(e -> LOGGER.error("Error updating parking session status id {}: {}", id,
                                                 e.getMessage()));
         }
+
+        /** First version assigned to a session, in Redis and in session_version alike. */
+        private static final long INITIAL_VERSION = 1L;
 
         private void broadcastSessionUpdated(Integer sessionId, String newStatus) {
                 LOGGER.debug("Session {} updated to status {}", sessionId, newStatus);
@@ -278,62 +342,47 @@ public class ParkingSessionService {
 
         private SessionEventPayload toSessionEventPayload(ParkingSessionDto dto) {
                 return new SessionEventPayload(
-                        dto.sessionId(),
-                        dto.reservationId(),
-                        dto.slotId(),
-                        dto.userId(),
-                        dto.vehicleId(),
-                        dto.entryGateId(),
-                        dto.exitGateId(),
-                        dto.sessionStatus(),
-                        dto.actualEntryTime(),
-                        dto.actualExitTime(),
-                        dto.expectedExitTime(),
-                        dto.durationMinutes(),
-                        dto.paymentStatus(),
-                        dto.sessionVersion(),
-                        LocalDateTime.now()
-                );
+                                dto.sessionId(),
+                                dto.reservationId(),
+                                dto.slotId(),
+                                dto.userId(),
+                                dto.vehicleId(),
+                                dto.entryGateId(),
+                                dto.exitGateId(),
+                                dto.sessionStatus(),
+                                dto.actualEntryTime(),
+                                dto.actualExitTime(),
+                                dto.expectedExitTime(),
+                                dto.durationMinutes(),
+                                dto.paymentStatus(),
+                                dto.sessionVersion(),
+                                LocalDateTime.now());
         }
 
-        private SessionEventPayload toSessionEventPayload(Integer sessionId, String status) {
-                return new SessionEventPayload(
-                        sessionId,
-                        null, // reservationId
-                        null, // slotId
-                        null, // userId
-                        null, // vehicleId
-                        null, // entryGateId
-                        null, // exitGateId
-                        status,
-                        null, // actualEntryTime
-                        null, // actualExitTime
-                        null, // expectedExitTime
-                        null, // durationMinutes
-                        null, // paymentStatus
-                        null, // sessionVersion
-                        LocalDateTime.now()
-                );
-        }
+        // Removed: toSessionEventPayload(sessionId, status). It built a payload whose
+        // every other field was null and published it. The consumer wrote that payload
+        // straight over the cached session, wiping slotId, userId and sessionVersion,
+        // after which the next read returned a null version, the optimistic lock
+        // compared against the wrong number, and the exit update matched zero rows.
+        // Status changes now publish the payload Redis returned.
 
         private ParkingSessionDto toParkingSessionDto(SessionEventPayload payload) {
                 return new ParkingSessionDto(
-                        payload.sessionId(),
-                        payload.reservationId(),
-                        payload.slotId(),
-                        payload.userId(),
-                        payload.vehicleId(),
-                        payload.entryGateId(),
-                        payload.exitGateId(),
-                        payload.sessionStatus(),
-                        payload.actualEntryTime(),
-                        payload.actualExitTime(),
-                        payload.expectedExitTime(),
-                        payload.durationMinutes(),
-                        payload.paymentStatus(),
-                        payload.sessionVersion(),
-                        payload.updatedAt(),
-                        payload.updatedAt()
-                );
+                                payload.sessionId(),
+                                payload.reservationId(),
+                                payload.slotId(),
+                                payload.userId(),
+                                payload.vehicleId(),
+                                payload.entryGateId(),
+                                payload.exitGateId(),
+                                payload.sessionStatus(),
+                                payload.actualEntryTime(),
+                                payload.actualExitTime(),
+                                payload.expectedExitTime(),
+                                payload.durationMinutes(),
+                                payload.paymentStatus(),
+                                payload.sessionVersion(),
+                                payload.updatedAt(),
+                                payload.updatedAt());
         }
 }
