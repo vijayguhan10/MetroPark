@@ -8,7 +8,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.example.Metropark.event.EventPublisher;
 import com.example.Metropark.event.payload.PaymentEventPayload;
@@ -85,6 +84,7 @@ public class PaymentService {
                     if (cleanDto.sessionId() == null) {
                         return Mono.error(new IllegalArgumentException("Session ID is required."));
                     }
+                    //
 
                     return sessionRepository.findById(cleanDto.sessionId())
                             .switchIfEmpty(Mono.error(new IllegalArgumentException("Parking session not found.")))
