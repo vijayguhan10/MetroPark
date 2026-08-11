@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.Metropark.parking.dto.ParkingSlotDto;
+import com.example.Metropark.parking.dto.SlotAvailabilityRequestDto;
+import com.example.Metropark.parking.dto.SlotAvailabilityResponseDto;
 import com.example.Metropark.parking.service.ParkingSlotService;
 
 import reactor.core.publisher.Flux;
@@ -52,6 +54,16 @@ public class ParkingSlotController {
         return service.getSlotById(id)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/availability")
+    public Mono<ResponseEntity<SlotAvailabilityResponseDto>> checkAvailability(@RequestBody SlotAvailabilityRequestDto request) {
+        LOGGER.info("Checking slot availability for location: {}, from: {}, to: {}", 
+                    request.locationId(), request.fromDate(), request.toDate());
+        return service.checkSlotAvailability(request)
+                .map(ResponseEntity::ok)
+                .onErrorResume(IllegalArgumentException.class,
+                        e -> Mono.just(ResponseEntity.badRequest().build()));
     }
 
 

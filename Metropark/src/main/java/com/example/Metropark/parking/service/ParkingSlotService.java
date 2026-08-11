@@ -1,14 +1,24 @@
 package com.example.Metropark.parking.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.example.Metropark.event.payload.ReservationEventPayload;
+import com.example.Metropark.event.payload.SessionEventPayload;
 import com.example.Metropark.event.payload.SlotEventPayload;
 import com.example.Metropark.parking.dto.ParkingSlotDto;
+import com.example.Metropark.parking.dto.SlotAvailabilityRequestDto;
+import com.example.Metropark.parking.dto.SlotAvailabilityResponseDto;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.redis.RedisStateService;
 
@@ -22,6 +32,15 @@ public class ParkingSlotService {
 
         private final ParkingSlotRepository repository;
         private final RedisStateService redisStateService;
+
+        // Slot statuses that indicate a slot is occupied/unavailable
+        private static final Set<String> OCCUPIED_SLOT_STATUSES = Set.of("OCCUPIED", "RESERVED", "MAINTENANCE");
+        
+        // Session statuses that indicate a slot is actively held
+        private static final Set<String> ACTIVE_SESSION_STATUSES = Set.of("RESERVED", "CREATED", "ACTIVE");
+        
+        // Reservation statuses that indicate a slot is reserved
+        private static final Set<String> ACTIVE_RESERVATION_STATUSES = Set.of("RESERVED", "WAITING");
 
         public ParkingSlotService(
                         ParkingSlotRepository repository,
@@ -208,8 +227,180 @@ public class ParkingSlotService {
                                                 e.getMessage()));
         }
 
-        private Mono<SlotEventPayload> currentSlotPayload(
-                        Integer id) {
+        /**
+         * Returns the IDs of parking slots that are filled/unavailable for the given
+         * location, date, and time range.
+         * 
+         * A slot is considered filled/unavailable if:
+         * 1. Its current status in Redis is OCCUPIED, RESERVED, or MAINTENANCE
+         * 2. It has an active reservation that overlaps with the requested time range
+         * 3. It has an active session that overlaps with the requested time range
+         * 
+         * @param locationId the location identifier
+         * @param date the date to check availability for
+         * @param fromTime the start time of the requested range
+         * @param toTime the end time of the requested range
+         * @return Flux of filled/unavailable slot IDs
+         */
+        public Flux<Integer> getFilledSlotIds(
+                        String locationId,
+                        LocalDate date,
+                        LocalTime fromTime,
+                        LocalTime toTime) {
+
+                LOGGER.info(
+                                "Checking filled slots for location: {}, date: {}, from: {}, to: {}",
+                                locationId, date, fromTime, toTime);
+
+                if (locationId == null || locationId.isBlank()) {
+                        return Flux.error(
+                                        new IllegalArgumentException("Location ID is required."));
+                }
+                if (date == null) {
+                        return Flux.error(
+                                        new IllegalArgumentException("Date is required."));
+                }
+                if (fromTime == null || toTime == null) {
+                        return Flux.error(
+                                        new IllegalArgumentException("From time and to time are required."));
+                }
+                if (fromTime.isAfter(toTime) || fromTime.equals(toTime)) {
+                        return Flux.error(
+                                        new IllegalArgumentException("From time must be before to time."));
+                }
+
+                LocalDateTime rangeStart = date.atTime(fromTime);
+                LocalDateTime rangeEnd = date.atTime(toTime);
+
+                // Get all slots for the location from Redis
+                return redisStateService.getAllSlots()
+                                .filter(slot -> locationId.equals(slot.locationId()))
+                                .collectList()
+                                .flatMapMany(slots -> {
+                                        if (slots.isEmpty()) {
+                                                LOGGER.debug("No slots found for location: {}", locationId);
+                                                return Flux.empty();
+                                        }
+
+                                        // Get all reservations and sessions from Redis
+                                        return Mono.zip(
+                                                        redisStateService.getAllReservations().collectList(),
+                                                        redisStateService.getAllSessions().collectList())
+                                                .flatMapMany(tuple -> {
+                                                        List<ReservationEventPayload> reservations = tuple.getT1();
+                                                        List<SessionEventPayload> sessions = tuple.getT2();
+
+                                                        // Filter reservations and sessions for this location's slots
+                                                        Set<Integer> locationSlotIds = slots.stream()
+                                                                        .map(SlotEventPayload::slotId)
+                                                                        .collect(Collectors.toSet());
+
+                                                        List<ReservationEventPayload> relevantReservations = reservations.stream()
+                                                                        .filter(r -> locationSlotIds.contains(r.slotId()))
+                                                                        .filter(r -> ACTIVE_RESERVATION_STATUSES.contains(
+                                                                                        r.reservationStatus() != null ? r.reservationStatus().toUpperCase() : ""))
+                                                                        .toList();
+
+                                                        List<SessionEventPayload> relevantSessions = sessions.stream()
+                                                                        .filter(s -> locationSlotIds.contains(s.slotId()))
+                                                                        .filter(s -> ACTIVE_SESSION_STATUSES.contains(
+                                                                                        s.sessionStatus() != null ? s.sessionStatus().toUpperCase() : ""))
+                                                                        .toList();
+
+                                                        // Determine filled slots
+                                                        return Flux.fromIterable(slots)
+                                                                        .filter(slot -> isSlotFilled(
+                                                                                        slot,
+                                                                                        relevantReservations,
+                                                                                        relevantSessions,
+                                                                                        rangeStart,
+                                                                                        rangeEnd))
+                                                                        .map(SlotEventPayload::slotId);
+                                                });
+                                })
+                                .doOnComplete(() -> LOGGER.debug(
+                                                "Completed filled slots check for location: {}", locationId))
+                                .doOnError(e -> LOGGER.error(
+                                                "Error checking filled slots for location {}: {}",
+                                                locationId, e.getMessage()));
+        }
+
+        /**
+         * Determines if a slot is filled/unavailable during the given time range.
+         */
+        private boolean isSlotFilled(
+                        SlotEventPayload slot,
+                        List<ReservationEventPayload> reservations,
+                        List<SessionEventPayload> sessions,
+                        LocalDateTime rangeStart,
+                        LocalDateTime rangeEnd) {
+
+                // 1. Check current slot status
+                String currentStatus = slot.currentStatus() != null ? slot.currentStatus().toUpperCase() : "";
+                if (OCCUPIED_SLOT_STATUSES.contains(currentStatus)) {
+                        return true;
+                }
+
+                // 2. Check for overlapping reservations
+                for (ReservationEventPayload reservation : reservations) {
+                        if (reservation.slotId().equals(slot.slotId())) {
+                                if (reservation.reservedAt() != null && reservation.expiresAt() != null) {
+                                        // Check if reservation overlaps with requested range
+                                        if (timeRangesOverlap(
+                                                        reservation.reservedAt(),
+                                                        reservation.expiresAt(),
+                                                        rangeStart,
+                                                        rangeEnd)) {
+                                                return true;
+                                        }
+                                }
+                        }
+                }
+
+                // 3. Check for overlapping sessions
+                for (SessionEventPayload session : sessions) {
+                        if (session.slotId().equals(slot.slotId())) {
+                                LocalDateTime sessionStart = session.actualEntryTime() != null
+                                                ? session.actualEntryTime()
+                                                : session.expectedExitTime() != null
+                                                                ? session.expectedExitTime().minusMinutes(
+                                                                                session.durationMinutes() != null ? session.durationMinutes() : 60)
+                                                                : rangeStart;
+                                LocalDateTime sessionEnd = session.actualExitTime() != null
+                                                ? session.actualExitTime()
+                                                : session.expectedExitTime() != null
+                                                                ? session.expectedExitTime()
+                                                                : rangeEnd;
+
+                                if (timeRangesOverlap(sessionStart, sessionEnd, rangeStart, rangeEnd)) {
+                                        return true;
+                                }
+                        }
+                }
+
+                return false;
+        }
+
+        /**
+         * Checks if two time ranges overlap.
+         * Range 1: [start1, end1]
+         * Range 2: [start2, end2]
+         * They overlap if: start1 < end2 AND start2 < end1
+         */
+        private boolean timeRangesOverlap(
+                        LocalDateTime start1,
+                        LocalDateTime end1,
+                        LocalDateTime start2,
+                        LocalDateTime end2) {
+
+                if (start1 == null || end1 == null || start2 == null || end2 == null) {
+                        return false;
+                }
+
+                return start1.isBefore(end2) && start2.isBefore(end1);
+        }
+
+        private Mono<SlotEventPayload> currentSlotPayload(Integer id) {
 
                 return redisStateService
                                 .getSlot(id)
@@ -218,8 +409,7 @@ public class ParkingSlotService {
                                                                 .map(this::toSlotEventPayload));
         }
 
-        private SlotEventPayload toSlotEventPayload(
-                        ParkingSlotDto dto) {
+        private SlotEventPayload toSlotEventPayload(ParkingSlotDto dto) {
 
                 return new SlotEventPayload(
                                 dto.slotId(),
@@ -232,8 +422,7 @@ public class ParkingSlotService {
                                 LocalDateTime.now());
         }
 
-        private ParkingSlotDto toParkingSlotDto(
-                        SlotEventPayload payload) {
+        private ParkingSlotDto toParkingSlotDto(SlotEventPayload payload) {
 
                 return new ParkingSlotDto(
                                 payload.slotId(),
@@ -243,5 +432,172 @@ public class ParkingSlotService {
                                 payload.reservationClassId(),
                                 payload.sensorId(),
                                 payload.currentStatus());
+        }
+
+        /**
+         * Checks slot availability for a given location and date range.
+         * Returns available slot IDs and overlapping booked timings.
+         * 
+         * @param request the request containing locationId, fromDate, and toDate
+         * @return Mono with SlotAvailabilityResponseDto containing available slots and overlapping timings
+         */
+        public Mono<SlotAvailabilityResponseDto> checkSlotAvailability(SlotAvailabilityRequestDto request) {
+            
+            LOGGER.info("Checking slot availability for location: {}, from: {}, to: {}", 
+                        request.locationId(), request.fromDate(), request.toDate());
+
+            if (request.locationId() == null || request.locationId().isBlank()) {
+                return Mono.error(new IllegalArgumentException("Location ID is required."));
+            }
+            if (request.fromDate() == null || request.toDate() == null) {
+                return Mono.error(new IllegalArgumentException("From date and to date are required."));
+            }
+            if (request.fromDate().isAfter(request.toDate()) || request.fromDate().equals(request.toDate())) {
+                return Mono.error(new IllegalArgumentException("From date must be before to date."));
+            }
+
+            LocalDateTime rangeStart = request.fromDate();
+            LocalDateTime rangeEnd = request.toDate();
+
+            // Get all slots for the location from Redis
+            return redisStateService.getAllSlots()
+                    .filter(slot -> request.locationId().equals(slot.locationId()))
+                    .collectList()
+                    .flatMap(slots -> {
+                        if (slots.isEmpty()) {
+                            LOGGER.debug("No slots found for location: {}", request.locationId());
+                            return Mono.just(new SlotAvailabilityResponseDto(
+                                    rangeStart, rangeEnd, List.of(), List.of()));
+                        }
+
+                        // Get all reservations and sessions from Redis
+                        return Mono.zip(
+                                redisStateService.getAllReservations().collectList(),
+                                redisStateService.getAllSessions().collectList())
+                                .flatMap(tuple -> {
+                                    List<ReservationEventPayload> reservations = tuple.getT1();
+                                    List<SessionEventPayload> sessions = tuple.getT2();
+
+                                    // Filter reservations and sessions for this location's slots
+                                    Set<Integer> locationSlotIds = slots.stream()
+                                            .map(SlotEventPayload::slotId)
+                                            .collect(Collectors.toSet());
+
+                                    List<ReservationEventPayload> relevantReservations = reservations.stream()
+                                            .filter(r -> locationSlotIds.contains(r.slotId()))
+                                            .filter(r -> ACTIVE_RESERVATION_STATUSES.contains(
+                                                            r.reservationStatus() != null ? r.reservationStatus().toUpperCase() : ""))
+                                            .toList();
+
+                                    List<SessionEventPayload> relevantSessions = sessions.stream()
+                                            .filter(s -> locationSlotIds.contains(s.slotId()))
+                                            .filter(s -> ACTIVE_SESSION_STATUSES.contains(
+                                                            s.sessionStatus() != null ? s.sessionStatus().toUpperCase() : ""))
+                                            .toList();
+
+                                    // Find available slots (not filled during the entire requested interval)
+                                    List<Integer> availableSlotIds = slots.stream()
+                                            .filter(slot -> !isSlotFilled(slot, relevantReservations, relevantSessions, rangeStart, rangeEnd))
+                                            .map(SlotEventPayload::slotId)
+                                            .toList();
+
+                                    // Find overlapping booked timings
+                                    List<SlotAvailabilityResponseDto.OverlappingTimingDto> overlappingTimings = findOverlappingTimings(
+                                            relevantReservations, relevantSessions, rangeStart, rangeEnd);
+
+                                    return Mono.just(new SlotAvailabilityResponseDto(
+                                            rangeStart, rangeEnd, availableSlotIds, overlappingTimings));
+                                });
+                    })
+                    .doOnSuccess(result -> LOGGER.debug("Completed slot availability check for location: {}", request.locationId()))
+                    .doOnError(e -> LOGGER.error("Error checking slot availability for location {}: {}", request.locationId(), e.getMessage()));
+        }
+
+        /**
+         * Finds all booked timings that overlap with the requested date range.
+         * Combines overlapping intervals from reservations and sessions.
+         */
+        private List<SlotAvailabilityResponseDto.OverlappingTimingDto> findOverlappingTimings(
+                List<ReservationEventPayload> reservations,
+                List<SessionEventPayload> sessions,
+                LocalDateTime rangeStart,
+                LocalDateTime rangeEnd) {
+
+            List<SlotAvailabilityResponseDto.OverlappingTimingDto> overlappingTimings = new ArrayList<>();
+
+            // Check reservations for overlaps
+            for (ReservationEventPayload reservation : reservations) {
+                if (reservation.reservedAt() != null && reservation.expiresAt() != null) {
+                    if (timeRangesOverlap(reservation.reservedAt(), reservation.expiresAt(), rangeStart, rangeEnd)) {
+                        // Calculate the actual overlap
+                        LocalDateTime overlapStart = reservation.reservedAt().isAfter(rangeStart) 
+                                ? reservation.reservedAt() : rangeStart;
+                        LocalDateTime overlapEnd = reservation.expiresAt().isBefore(rangeEnd) 
+                                ? reservation.expiresAt() : rangeEnd;
+                        
+                        overlappingTimings.add(new SlotAvailabilityResponseDto.OverlappingTimingDto(overlapStart, overlapEnd));
+                    }
+                }
+            }
+
+            // Check sessions for overlaps
+            for (SessionEventPayload session : sessions) {
+                LocalDateTime sessionStart = session.actualEntryTime() != null
+                        ? session.actualEntryTime()
+                        : session.expectedExitTime() != null
+                                ? session.expectedExitTime().minusMinutes(
+                                                session.durationMinutes() != null ? session.durationMinutes() : 60)
+                                : rangeStart;
+                LocalDateTime sessionEnd = session.actualExitTime() != null
+                        ? session.actualExitTime()
+                        : session.expectedExitTime() != null
+                                ? session.expectedExitTime()
+                                : rangeEnd;
+
+                if (timeRangesOverlap(sessionStart, sessionEnd, rangeStart, rangeEnd)) {
+                    // Calculate the actual overlap
+                    LocalDateTime overlapStart = sessionStart.isAfter(rangeStart) ? sessionStart : rangeStart;
+                    LocalDateTime overlapEnd = sessionEnd.isBefore(rangeEnd) ? sessionEnd : rangeEnd;
+                    
+                    overlappingTimings.add(new SlotAvailabilityResponseDto.OverlappingTimingDto(overlapStart, overlapEnd));
+                }
+            }
+
+            // Merge overlapping intervals
+            return mergeOverlappingIntervals(overlappingTimings);
+        }
+
+        /**
+         * Merges overlapping time intervals.
+         */
+        private List<SlotAvailabilityResponseDto.OverlappingTimingDto> mergeOverlappingIntervals(
+                List<SlotAvailabilityResponseDto.OverlappingTimingDto> intervals) {
+
+            if (intervals.isEmpty()) {
+                return List.of();
+            }
+
+            // Sort by start time
+            intervals.sort(Comparator.comparing(SlotAvailabilityResponseDto.OverlappingTimingDto::from));
+
+            List<SlotAvailabilityResponseDto.OverlappingTimingDto> merged = new ArrayList<>();
+            SlotAvailabilityResponseDto.OverlappingTimingDto current = intervals.get(0);
+
+            for (int i = 1; i < intervals.size(); i++) {
+                SlotAvailabilityResponseDto.OverlappingTimingDto next = intervals.get(i);
+                
+                if (current.to().isAfter(next.from()) || current.to().equals(next.from())) {
+                    // Overlapping or adjacent - merge
+                    LocalDateTime newEnd = current.to().isAfter(next.to()) ? current.to() : next.to();
+                    current = new SlotAvailabilityResponseDto.OverlappingTimingDto(current.from(), newEnd);
+                } else {
+                    // No overlap - add current to merged and move to next
+                    merged.add(current);
+                    current = next;
+                }
+            }
+            merged.add(current);
+
+            return merged;
         }
 }
