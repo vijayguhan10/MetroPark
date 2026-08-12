@@ -99,7 +99,8 @@ public class ParkingLifecycleService {
          */
         private static final double PAYMENT_PENDING_RATE = 0.3;
         private static final double PAYMENT_FAILURE_RATE = 0.1;
-        // SUCCESS rate is implicit: 1.0 - PAYMENT_PENDING_RATE - PAYMENT_FAILURE_RATE = 0.6
+        // SUCCESS rate is implicit: 1.0 - PAYMENT_PENDING_RATE - PAYMENT_FAILURE_RATE =
+        // 0.6
 
         private final ParkingSessionRepository sessionRepository;
         private final ParkingSlotRepository slotRepository;
@@ -388,7 +389,8 @@ public class ParkingLifecycleService {
                                                                 if (r < PAYMENT_PENDING_RATE) {
                                                                         paymentStatus = PAYMENT_PENDING;
                                                                         sessionPaymentStatus = PAYMENT_PENDING;
-                                                                } else if (r < PAYMENT_PENDING_RATE + PAYMENT_FAILURE_RATE) {
+                                                                } else if (r < PAYMENT_PENDING_RATE
+                                                                                + PAYMENT_FAILURE_RATE) {
                                                                         paymentStatus = PAYMENT_FAILED;
                                                                         sessionPaymentStatus = SESSION_PAYMENT_FAILED;
                                                                 } else {
@@ -514,8 +516,10 @@ public class ParkingLifecycleService {
          * abandons the session after {@code MAX_EXIT_ATTEMPTS}.
          *
          * <p>
-         * The returned payment carries the status from the store (PENDING from Redis/PostgreSQL).
-         * The actual status transition to SUCCESS/FAILED is applied in {@link #exitVehicle}
+         * The returned payment carries the status from the store (PENDING from
+         * Redis/PostgreSQL).
+         * The actual status transition to SUCCESS/FAILED is applied in
+         * {@link #exitVehicle}
          * based on the random failure rate.
          */
         private Mono<PaymentEventPayload> resolvePaidPayment(

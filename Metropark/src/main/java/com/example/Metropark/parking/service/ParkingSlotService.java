@@ -178,6 +178,38 @@ public class ParkingSlotService {
                                                 e.getMessage()));
         }
 
+        /**
+         * Returns whether the given slot exists and is currently available.
+         *
+         * <p>
+         * Redis is the authoritative real-time source: it reflects OCCUPIED state
+         * immediately after a camera event is processed, whereas PostgreSQL lags by
+         * however long the lifecycle consumer takes. A slot unknown to Redis falls back
+         * to the PostgreSQL {@code current_status} column, which is the same strategy
+         * used by {@link ParkingLifecycleService#claimIfStillFree}.
+         *
+         * @param slotId the slot to check
+         * @return {@code Mono<true>} if the slot is AVAILABLE, {@code Mono<false>} if
+         *         it is occupied/reserved/unknown, or empty if the slot does not exist
+         *         in either store
+         */
+        public Mono<Boolean> isSlotAvailable(Integer slotId) {
+                return redisStateService
+                                .getSlotStatus(slotId)
+                                // Redis has no record → fall back to PostgreSQL
+                                .switchIfEmpty(
+                                        repository.findById(slotId)
+                                                .map(ParkingSlotDto::currentStatus))
+                                .map(status -> ParkingLifecycleService.SLOT_AVAILABLE
+                                                .equalsIgnoreCase(status))
+                                .doOnSuccess(available -> LOGGER.debug(
+                                                "Slot {} availability check: {}",
+                                                slotId, available))
+                                .doOnError(e -> LOGGER.error(
+                                                "Error checking availability for slot {}: {}",
+                                                slotId, e.getMessage()));
+        }
+
         public Mono<Integer> updateSlotStatus(
                         Integer id,
                         String status) {
