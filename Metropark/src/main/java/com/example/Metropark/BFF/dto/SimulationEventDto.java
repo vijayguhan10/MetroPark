@@ -1,7 +1,8 @@
 package com.example.Metropark.BFF.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record SimulationEventDto(
     @JsonProperty("type") String type,

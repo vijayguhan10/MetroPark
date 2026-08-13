@@ -6,12 +6,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * One vehicle entry or one vehicle exit, carried as a single message.
  *
  * <p>
- * Session, slot and payment travel together because
+ * For ENTRY: Session, slot and payment travel together because
  * {@link com.example.Metropark.parking.repo.ParkingLifecycleRepository} applies
- * them in one PostgreSQL transaction. Publishing them as three independent
- * events instead would let a slot be released in PostgreSQL while the session
- * that occupied it stayed open, which is the divergence the Redis-first design
- * is meant to rule out.
+ * them in one PostgreSQL transaction.
+ *
+ * <p>
+ * For EXIT: Only session and slot travel together in the lifecycle transaction.
+ * Payment is published as a SEPARATE event (third-party) and handled by the
+ * payment consumer independently.
  *
  * <p>
  * {@code slot} and {@code payment} are nullable so a caller that genuinely only
@@ -21,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * {@code newSessionVersion} under an optimistic lock.
  */
 public record ParkingLifecycleEventPayload(
-        @JsonProperty("session") SessionEventPayload session,
-        @JsonProperty("slot") SlotEventPayload slot,
-        @JsonProperty("payment") PaymentEventPayload payment,
-        @JsonProperty("expectedSessionVersion") Integer expectedSessionVersion,
-        @JsonProperty("newSessionVersion") Integer newSessionVersion) {
+                @JsonProperty("session") SessionEventPayload session,
+                @JsonProperty("slot") SlotEventPayload slot,
+                @JsonProperty("payment") PaymentEventPayload payment,
+                @JsonProperty("expectedSessionVersion") Integer expectedSessionVersion,
+                @JsonProperty("newSessionVersion") Integer newSessionVersion) {
 }

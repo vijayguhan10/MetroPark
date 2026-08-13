@@ -12,10 +12,16 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import com.example.Metropark.camera.event.CameraEventPublisher;
+import com.example.Metropark.location.repo.LocationRepository;
 import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSessionResponseDto;
+import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.parking.service.ParkingSessionService;
+import com.example.Metropark.parking.service.ParkingSlotService;
 import com.example.Metropark.testsupport.TestFixtures;
+import com.example.Metropark.user.repo.UserRepository;
+import com.example.Metropark.vehicle.service.VehicleService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,12 +31,40 @@ class ParkingSessionControllerTest {
 
     @Mock
     private ParkingSessionService service;
+    
+    @Mock
+    private VehicleService vehicleService;
+    
+    @Mock
+    private UserRepository userRepository;
+    
+    @Mock
+    private LocationRepository locationRepository;
+    
+    @Mock
+    private ParkingSlotRepository parkingSlotRepository;
+    
+    @Mock
+    private ParkingSlotService parkingSlotService;
+    
+    @Mock
+    private CameraEventPublisher cameraEventPublisher;
 
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
-        webTestClient = WebTestClient.bindToController(new ParkingSessionController(service)).build();
+        webTestClient = WebTestClient.bindToController(
+            new ParkingSessionController(
+                service,
+                vehicleService,
+                userRepository,
+                locationRepository,
+                parkingSlotRepository,
+                parkingSlotService,
+                cameraEventPublisher
+            )
+        ).build();
     }
 
     @Test

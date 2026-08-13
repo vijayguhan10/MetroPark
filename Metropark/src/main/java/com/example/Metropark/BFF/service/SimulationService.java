@@ -1,7 +1,7 @@
 package com.example.Metropark.BFF.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+// import java.math.BigDecimal;
+// import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,6 +27,8 @@ import com.example.Metropark.BFF.dto.SimulationStateDto;
 import com.example.Metropark.camera.event.CameraEvent;
 import com.example.Metropark.camera.event.CameraEventPublisher;
 import com.example.Metropark.camera.event.CameraEventType;
+// import com.example.Metropark.event.Event;
+// import com.example.Metropark.event.ParkingEventSink;
 import com.example.Metropark.gate.repo.GateRepository;
 import com.example.Metropark.location.dto.LocationDto;
 import com.example.Metropark.location.repo.LocationRepository;
@@ -34,7 +36,7 @@ import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSlotDto;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.parking.service.ParkingLifecycleService;
-import com.example.Metropark.parking.service.ParkingLifecycleService.ParkedVehicle;
+// import com.example.Metropark.parking.service.ParkingLifecycleService.ParkedVehicle;
 import com.example.Metropark.parking.service.ParkingSessionService;
 import com.example.Metropark.parking.service.ParkingSlotService;
 import com.example.Metropark.payments.repo.PaymentMethodRepository;
@@ -108,7 +110,7 @@ public class SimulationService {
         private static final Logger LOGGER = LoggerFactory.getLogger(SimulationService.class);
 
         /** Entry tick: one vehicle in, at most, every 500ms. */
-        private static final Duration ENTRY_INTERVAL = Duration.ofMillis(500);
+        private static final Duration ENTRY_INTERVAL = Duration.ofSeconds(2);
         /** Exit tick: one vehicle out, at most, every 2 seconds. */
         private static final Duration EXIT_INTERVAL = Duration.ofSeconds(2);
 

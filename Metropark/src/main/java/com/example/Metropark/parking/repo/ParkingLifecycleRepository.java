@@ -21,13 +21,22 @@ import reactor.core.publisher.Mono;
  * Persists one consumed vehicle-entry or vehicle-exit event to PostgreSQL.
  *
  * <p>
- * All writes for a single event run inside {@code dsl.transactionPublisher}, so
+ * For ENTRY: All writes run inside {@code dsl.transactionPublisher}, so
  * parking_sessions, parking_slots and payments commit together or not at all.
- * This is deliberate rather than {@code @Transactional}: the DSLContext is built
+ *
+ * <p>
+ * For EXIT: Only parking_sessions and parking_slots commit together in one
+ * transaction.
+ * Payment is handled separately as a third-party event by the payment consumer.
+ *
+ * <p>
+ * This is deliberate rather than {@code @Transactional}: the DSLContext is
+ * built
  * from the raw R2DBC ConnectionFactory
  * ({@code DSL.using(connectionFactory, POSTGRES)}), so it acquires its own
  * connection per query and never joins the transaction Spring's reactive
- * transaction manager binds to the subscriber context. {@code @Transactional} on
+ * transaction manager binds to the subscriber context. {@code @Transactional}
+ * on
  * these paths is silently a no-op; jOOQ's own transaction publisher is not.
  */
 @Repository
@@ -79,6 +88,7 @@ public class ParkingLifecycleRepository {
                                                         field("expected_exit_time"),
                                                         field("duration_minutes"),
                                                         field("payment_status"),
+                                                        field("surge_multiplier"),
                                                         field("session_version"),
                                                         field("created_at"),
                                                         field("updated_at"))
@@ -96,6 +106,7 @@ public class ParkingLifecycleRepository {
                                                         session.expectedExitTime(),
                                                         session.durationMinutes(),
                                                         session.paymentStatus(),
+                                                        session.surgeMultiplier() != null ? session.surgeMultiplier() : java.math.BigDecimal.ONE,
                                                         session.sessionVersion(),
                                                         session.updatedAt(),
                                                         session.updatedAt())
@@ -174,7 +185,8 @@ public class ParkingLifecycleRepository {
 
         /**
          * Vehicle exit, in the mandated order: parking_sessions (EXITED) then
-         * parking_slots (AVAILABLE) then payments (PAID), inside one transaction.
+         * parking_slots (AVAILABLE), inside one transaction.
+         * Payment is handled separately as a third-party event.
          *
          * <p>
          * The session update is guarded by an optimistic lock on
@@ -185,7 +197,6 @@ public class ParkingLifecycleRepository {
         public Mono<PersistResult> persistExit(ParkingLifecycleEventPayload payload) {
                 SessionEventPayload session = payload.session();
                 SlotEventPayload slot = payload.slot();
-                PaymentEventPayload payment = payload.payment();
 
                 Integer expectedVersion = payload.expectedSessionVersion();
                 Integer newVersion = payload.newSessionVersion();
@@ -234,28 +245,11 @@ public class ParkingLifecycleRepository {
                                                                                         "parking_slots update affected 0 rows for slot "
                                                                                                         + slot.slotId())));
 
-                        Mono<Integer> updatePayment = payment == null
-                                        ? Mono.just(0)
-                                        : Mono.from(tx.update(table("payments"))
-                                                        .set(field("payment_status"), payment.paymentStatus())
-                                                        .set(field("processed_at"), payment.processedAt())
-                                                        .set(field("updated_at"), LocalDateTime.now())
-                                                        .where(field("payment_id").eq(payment.paymentId())))
-                                                        .defaultIfEmpty(0)
-                                                        .doOnNext(rows -> LOGGER.info(
-                                                                        "POSTGRES payment UPDATE | payment={} session={} status={} rowsAffected={}",
-                                                                        payment.paymentId(), payment.sessionId(),
-                                                                        payment.paymentStatus(), rows))
-                                                        .flatMap(rows -> rows > 0
-                                                                        ? Mono.just(rows)
-                                                                        : Mono.error(new IllegalStateException(
-                                                                                        "payments update affected 0 rows for payment "
-                                                                                                        + payment.paymentId())));
+                        // Payment is NOT updated here - it's a separate third-party event
+                        // handled by the payment consumer
 
                         return updateSession.flatMap(sessionRows -> updateSlot
-                                        .flatMap(slotRows -> updatePayment
-                                                        .map(paymentRows -> new PersistResult(sessionRows, slotRows,
-                                                                        paymentRows))));
+                                        .map(slotRows -> new PersistResult(sessionRows, slotRows, 0)));
                 }));
         }
 }

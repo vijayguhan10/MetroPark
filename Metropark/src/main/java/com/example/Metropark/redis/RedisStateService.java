@@ -19,7 +19,6 @@ import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSlotDto;
 import com.example.Metropark.payments.dto.PaymentDto;
 import com.example.Metropark.reservation.dto.ReservationDto;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import reactor.core.publisher.Flux;
@@ -284,6 +283,7 @@ public class RedisStateService {
                                 session.expectedExitTime(),
                                 session.durationMinutes(),
                                 session.paymentStatus(),
+                                session.surgeMultiplier(),
                                 session.sessionVersion(),
                                 java.time.LocalDateTime.now());
 
@@ -347,6 +347,7 @@ public class RedisStateService {
                                                         existing.expectedExitTime(),
                                                         existing.durationMinutes(),
                                                         existing.paymentStatus(),
+                                                        existing.surgeMultiplier(),
                                                         // sessionVersion must equal the version key, not
                                                         // existing+1. The consumer derives its optimistic
                                                         // lock from the version the event carries, so the

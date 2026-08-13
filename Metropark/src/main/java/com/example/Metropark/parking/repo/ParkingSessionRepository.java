@@ -291,23 +291,38 @@ public class ParkingSessionRepository {
                                 .map(record -> true).defaultIfEmpty(false);
         }
 
-        private ParkingSessionDto mapToDto(Record record) {
-                return new ParkingSessionDto(
-                                record.get("session_id", Integer.class),
-                                record.get("reservation_id", Integer.class),
-                                record.get("slot_id", Integer.class),
-                                record.get("user_id", String.class),
-                                record.get("vehicle_id", Integer.class),
-                                record.get("entry_gate_id", Integer.class),
-                                record.get("exit_gate_id", Integer.class),
-                                record.get("session_status", String.class),
-                                record.get("actual_entry_time", LocalDateTime.class),
-                                record.get("actual_exit_time", LocalDateTime.class),
-                                record.get("expected_exit_time", LocalDateTime.class),
-                                record.get("duration_minutes", Integer.class),
-                                record.get("payment_status", String.class),
-                                record.get("session_version", Integer.class),
-                                record.get("created_at", LocalDateTime.class),
-                                record.get("updated_at", LocalDateTime.class));
+        public Mono<Integer> updatePaymentStatus(Integer sessionId, String paymentStatus, String sessionStatus) {
+        return Mono.from(
+            dsl.update(table("parking_sessions"))
+                .set(field("payment_status"), paymentStatus)
+                .set(field("session_status"), sessionStatus != null ? sessionStatus : field("session_status", String.class))
+                .set(field("updated_at"), LocalDateTime.now())
+                .where(field("session_id").eq(sessionId))
+        ).defaultIfEmpty(0);
+    }
+
+    private ParkingSessionDto mapToDto(Record record) {
+        java.math.BigDecimal surge = record.get("surge_multiplier", java.math.BigDecimal.class);
+        if (surge == null) {
+            surge = java.math.BigDecimal.ONE;
         }
+        return new ParkingSessionDto(
+                record.get("session_id", Integer.class),
+                record.get("reservation_id", Integer.class),
+                record.get("slot_id", Integer.class),
+                record.get("user_id", String.class),
+                record.get("vehicle_id", Integer.class),
+                record.get("entry_gate_id", Integer.class),
+                record.get("exit_gate_id", Integer.class),
+                record.get("session_status", String.class),
+                record.get("actual_entry_time", LocalDateTime.class),
+                record.get("actual_exit_time", LocalDateTime.class),
+                record.get("expected_exit_time", LocalDateTime.class),
+                record.get("duration_minutes", Integer.class),
+                record.get("payment_status", String.class),
+                surge,
+                record.get("session_version", Integer.class),
+                record.get("created_at", LocalDateTime.class),
+                record.get("updated_at", LocalDateTime.class));
+    }
 }

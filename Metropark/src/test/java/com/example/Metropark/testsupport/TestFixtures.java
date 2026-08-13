@@ -62,6 +62,7 @@ public final class TestFixtures {
                 FIXED_TIME.plusHours(2),
                 120,
                 "PENDING",
+                BigDecimal.ONE,
                 1,
                 FIXED_TIME,
                 FIXED_TIME);

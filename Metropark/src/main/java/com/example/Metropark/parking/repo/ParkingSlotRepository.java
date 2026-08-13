@@ -121,6 +121,24 @@ public class ParkingSlotRepository {
         ).defaultIfEmpty(0);
     }
 
+    public Mono<Double> getOccupancyRate(String locationId) {
+        var condition = locationId == null ? org.jooq.impl.DSL.trueCondition() : field("location_id").eq(locationId);
+        return Mono.from(
+            dsl.select(
+                field("COUNT(*)", Double.class).as("total"),
+                field("COUNT(CASE WHEN current_status = 'OCCUPIED' THEN 1 END)", Double.class).as("occupied")
+            ).from(table("parking_slots"))
+            .where(condition)
+        ).map(record -> {
+            Double total = record.get("total", Double.class);
+            Double occupied = record.get("occupied", Double.class);
+            if (total == null || total == 0.0) {
+                return 0.0;
+            }
+            return (occupied != null ? occupied : 0.0) / total;
+        }).defaultIfEmpty(0.0);
+    }
+
     private ParkingSlotDto mapToDto(Record record) {
 
         return new ParkingSlotDto(
