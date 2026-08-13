@@ -75,7 +75,6 @@ public class ReservationService {
 
                                         return reservationRepository.create(reservation)
                                                         .flatMap(reservationId -> {
-                                                                // Update the reservation with the generated ID
                                                                 ReservationDto savedReservation = new ReservationDto(
                                                                                 reservationId,
                                                                                 reservation.userId(),
@@ -90,7 +89,6 @@ public class ReservationService {
 
                                                                 long version = 1;
 
-                                                                // Save to Redis
                                                                 return redisStateService
                                                                                 .saveReservation(savedReservation,
                                                                                                 version)
@@ -109,7 +107,6 @@ public class ReservationService {
 
         public Flux<ReservationDto> getAllReservations() {
                 LOGGER.debug("Fetching all reservations");
-                // Try Redis first, fallback to DB
                 return redisStateService.getAllReservations()
                                 .map(this::toReservationDto)
                                 .switchIfEmpty(reservationRepository.findAll())
@@ -119,7 +116,6 @@ public class ReservationService {
 
         public Mono<ReservationDto> getReservationById(Integer id) {
                 LOGGER.debug("Fetching reservation by id: {}", id);
-                // Try Redis first, fallback to DB
                 return redisStateService.getReservation(id)
                                 .map(this::toReservationDto)
                                 .switchIfEmpty(reservationRepository.findById(id))
@@ -144,7 +140,6 @@ public class ReservationService {
                                                                 "Update failed: Concurrency conflict or Reservation not found. Please refresh and try again."));
                                         }
 
-                                        // Increment version and update Redis
                                         return redisStateService.incrementVersion("reservation", id.toString())
                                                         .flatMap(version -> redisStateService.updateReservationStatus(
                                                                         id, normalizedStatus, version))

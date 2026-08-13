@@ -15,23 +15,6 @@ import reactor.core.publisher.Mono;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Creates a span per service, repository and messaging method.
- *
- * <p>Spans are produced through Micrometer's {@link Observation} API rather than
- * the OpenTelemetry SDK directly, so they flow through whichever tracer is
- * configured (currently the OTLP exporter pointed at the collector).
- *
- * <p>The application is reactive: a service method returns a {@code Mono}
- * immediately and the actual work happens later, on a different thread. Opening
- * a span around {@code proceed()} would therefore close it before any work runs
- * and record a duration of roughly zero. Reactive return values are instead
- * tapped so the observation spans the lifetime of the subscription.
- *
- * <p>HTTP entry points are deliberately not covered here — Spring Boot's
- * built-in {@code http.server.requests} instrumentation already traces them, and
- * a second aspect would produce a duplicate span for every request.
- */
 @Aspect
 @Component
 public class TracingAspect {
@@ -102,14 +85,6 @@ public class TracingAspect {
                 "code.function", methodName));
     }
 
-    /**
-     * Runs the join point inside an observation, choosing the reactive or the
-     * blocking strategy based on the declared return type.
-     *
-     * <p>Method arguments are intentionally not recorded: they carry plate
-     * numbers, user ids and payment details, and every distinct value would
-     * become a new tag on the span-derived metrics.
-     */
     private Object trace(ProceedingJoinPoint joinPoint, String name, Map<String, String> tags) throws Throwable {
         Class<?> returnType = ((MethodSignature) joinPoint.getSignature()).getReturnType();
 

@@ -17,28 +17,6 @@ import com.example.Metropark.event.payload.SlotEventPayload;
 
 import reactor.core.publisher.Mono;
 
-/**
- * Persists one consumed vehicle-entry or vehicle-exit event to PostgreSQL.
- *
- * <p>
- * For ENTRY: All writes run inside {@code dsl.transactionPublisher}, so
- * parking_sessions, parking_slots and payments commit together or not at all.
- *
- * <p>
- * For EXIT: Only parking_sessions and parking_slots commit together in one
- * transaction.
- * Payment is handled separately as a third-party event by the payment consumer.
- *
- * <p>
- * This is deliberate rather than {@code @Transactional}: the DSLContext is
- * built
- * from the raw R2DBC ConnectionFactory
- * ({@code DSL.using(connectionFactory, POSTGRES)}), so it acquires its own
- * connection per query and never joins the transaction Spring's reactive
- * transaction manager binds to the subscriber context. {@code @Transactional}
- * on
- * these paths is silently a no-op; jOOQ's own transaction publisher is not.
- */
 @Repository
 public class ParkingLifecycleRepository {
 
@@ -50,21 +28,9 @@ public class ParkingLifecycleRepository {
                 this.dsl = dsl;
         }
 
-        /**
-         * Row counts for each table touched while persisting one lifecycle event.
-         */
         public record PersistResult(int sessionRows, int slotRows, int paymentRows) {
         }
 
-        /**
-         * Vehicle entry: insert the session, mark the slot OCCUPIED, insert the
-         * pending payment - in that order, inside one transaction.
-         *
-         * <p>
-         * Both inserts are ON CONFLICT DO NOTHING so a RabbitMQ redelivery (which is
-         * always possible once ACK is manual) re-applies cleanly instead of failing on
-         * a duplicate key and looping into the dead letter queue.
-         */
         public Mono<PersistResult> persistEntry(ParkingLifecycleEventPayload payload) {
                 SessionEventPayload session = payload.session();
                 SlotEventPayload slot = payload.slot();
@@ -110,13 +76,6 @@ public class ParkingLifecycleRepository {
                                                         session.sessionVersion(),
                                                         session.updatedAt(),
                                                         session.updatedAt())
-                                        // Targeted at the primary key, NOT a blanket
-                                        // onDuplicateKeyIgnore(). parking_sessions also carries the
-                                        // partial unique index unique_active_session_per_vehicle;
-                                        // an untargeted ON CONFLICT DO NOTHING would swallow that
-                                        // violation too, skip the row, and leave the payment insert
-                                        // below to fail on its session_id foreign key - the same
-                                        // dead letter, several statements away from its cause.
                                         .onConflict(field("session_id")).doNothing())
                                         .defaultIfEmpty(0)
                                         .doOnNext(rows -> LOGGER.info(
@@ -173,9 +132,6 @@ public class ParkingLifecycleRepository {
                                                                         payment.paymentId(), payment.sessionId(),
                                                                         payment.paymentStatus(), rows));
 
-                        // concatMap semantics via sequential composition: the slot write is
-                        // only issued once the session write has completed, and the payment
-                        // write once the slot write has completed.
                         return insertSession.flatMap(sessionRows -> updateSlot
                                         .flatMap(slotRows -> insertPayment
                                                         .map(paymentRows -> new PersistResult(sessionRows, slotRows,
@@ -183,17 +139,6 @@ public class ParkingLifecycleRepository {
                 }));
         }
 
-        /**
-         * Vehicle exit, in the mandated order: parking_sessions (EXITED) then
-         * parking_slots (AVAILABLE), inside one transaction.
-         * Payment is handled separately as a third-party event.
-         *
-         * <p>
-         * The session update is guarded by an optimistic lock on
-         * {@code session_version}. A zero row count is escalated as an error so the
-         * message is dead lettered instead of being acknowledged as if it had been
-         * applied - that silent-success path is what let Redis and PostgreSQL diverge.
-         */
         public Mono<PersistResult> persistExit(ParkingLifecycleEventPayload payload) {
                 SessionEventPayload session = payload.session();
                 SlotEventPayload slot = payload.slot();
@@ -212,8 +157,6 @@ public class ParkingLifecycleRepository {
                                         .set(field("session_version"), newVersion)
                                         .set(field("updated_at"), LocalDateTime.now())
                                         .where(field("session_id").eq(session.sessionId()))
-                                        // `in(expected, new)` keeps the update idempotent: a redelivered
-                                        // message finds the row already at newVersion and still matches.
                                         .and(field("session_version").in(expectedVersion, newVersion)))
                                         .defaultIfEmpty(0)
                                         .doOnNext(rows -> LOGGER.info(
@@ -245,8 +188,6 @@ public class ParkingLifecycleRepository {
                                                                                         "parking_slots update affected 0 rows for slot "
                                                                                                         + slot.slotId())));
 
-                        // Payment is NOT updated here - it's a separate third-party event
-                        // handled by the payment consumer
 
                         return updateSession.flatMap(sessionRows -> updateSlot
                                         .map(slotRows -> new PersistResult(sessionRows, slotRows, 0)));

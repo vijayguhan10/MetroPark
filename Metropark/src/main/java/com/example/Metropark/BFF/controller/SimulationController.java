@@ -21,11 +21,6 @@ public class SimulationController {
         this.simulationService = simulationService;
     }
 
-    /**
-     * Starts THE simulation. It then runs until {@link #stopSimulation()} is called
-     * or the application shuts down. A second call while one is running reports
-     * RUNNING and starts nothing.
-     */
     @PostMapping("/simulation/start")
     public Mono<SimulationRunResponseDto> startSimulation() {
         return simulationService.startSimulation();
@@ -41,10 +36,6 @@ public class SimulationController {
         return simulationService.getEventStream();
     }
 
-    /**
-     * Kept so the existing dashboard keeps working; prefer
-     * {@code POST /simulation/start}.
-     */
     @PostMapping("/bff/run-simulation")
     public Mono<SimulationRunResponseDto> runSimulation() {
         return simulationService.startSimulation();

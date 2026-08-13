@@ -23,13 +23,6 @@ public class ParkingSessionRepository {
                 this.dsl = dsl;
         }
 
-        /**
-         * Reserves the primary key from the PostgreSQL identity sequence WITHOUT
-         * writing any row. Redis-first requires an id before the session exists in
-         * PostgreSQL; taking it from the real sequence guarantees the id Redis
-         * publishes is the same id the consumer inserts, and that it can never
-         * collide with a row inserted through the ordinary auto-increment path.
-         */
         public Mono<Integer> allocateSessionId() {
                 return Mono.from(dsl.select(
                                 field("nextval(pg_get_serial_sequence('parking_sessions', 'session_id'))",
@@ -213,12 +206,6 @@ public class ParkingSessionRepository {
                                 .map(record -> record.into(ParkingSessionResponseDto.class));
         }
 
-        /**
-         * {@code defaultIfEmpty(0)} matters: when the WHERE clause matches nothing the
-         * reactive jOOQ publisher can complete without emitting, and a bare
-         * {@code flatMap} downstream would then be skipped entirely - the caller sees
-         * an empty Mono and concludes "success" for an update that affected no rows.
-         */
         public Mono<Integer> updateStatusWithOptimisticLock(Integer id, String status, Integer currentVersion) {
                 return Mono.from(dsl.update(table("parking_sessions"))
                                 .set(field("session_status"), status)
@@ -229,12 +216,6 @@ public class ParkingSessionRepository {
                                 .defaultIfEmpty(0);
         }
 
-        /**
-         * Applies the full exit transition carried by a consumed event under an
-         * optimistic lock on {@code session_version}. Idempotent on redelivery: if the
-         * row already carries {@code newVersion} the second predicate matches and the
-         * update is a harmless no-op that still reports a row.
-         */
         public Mono<Integer> applyExitWithOptimisticLock(
                         Integer id,
                         String status,
@@ -264,16 +245,6 @@ public class ParkingSessionRepository {
                                 .defaultIfEmpty(false);
         }
 
-        /**
-         * The open session for a vehicle, if it has one.
-         *
-         * <p>
-         * This is how a camera exit finds what to close: the event carries a number
-         * plate, never a session id, so the session has to be looked up from the
-         * vehicle behind that plate. {@code unique_active_session_per_vehicle}
-         * guarantees at most one row matches CREATED or ACTIVE, so the newest-first
-         * ordering only matters for the RESERVED case.
-         */
         public Mono<ParkingSessionDto> findActiveByVehicleId(Integer vehicleId) {
                 return Mono.from(dsl.selectFrom(table("parking_sessions"))
                                 .where(field("vehicle_id").eq(vehicleId))

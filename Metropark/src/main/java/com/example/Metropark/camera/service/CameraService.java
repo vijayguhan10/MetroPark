@@ -66,11 +66,6 @@ public class CameraService {
                 now,
                 now);
 
-        // Registering a camera emits no camera event. It used to publish a
-        // car.entered carrying the new camera's id and a null number plate, which
-        // meant "a car with no plate entered" - now that camera events actually
-        // drive parking, that would be an entry attempt for a car that does not
-        // exist.
         return repository.create(cleanDto)
                 .doOnSuccess(cameraId -> LOGGER.info("Camera created successfully, camera id: {}", cameraId))
                 .doOnError(e -> LOGGER.error("Error creating camera: {}", e.getMessage()));
@@ -132,8 +127,6 @@ public class CameraService {
                 dto.createdAt(),
                 now);
 
-        // As in createCamera: editing a camera's own record is not a car movement
-        // and must not be published as one.
         return repository.update(id, cleanDto)
                 .flatMap(rowsUpdated -> rowsUpdated == 0
                         ? Mono.error(new IllegalStateException("Camera not found."))
@@ -150,16 +143,6 @@ public class CameraService {
                 .doOnError(e -> LOGGER.error("Error deleting camera id {}: {}", id, e.getMessage()));
     }
 
-    /**
-     * A real camera reporting a car. Goes through the same
-     * {@link CameraEventPublisher} the simulator uses, so a hardware event and a
-     * simulated one are indistinguishable downstream and both drive parking.
-     *
-     * <p>
-     * vehicleId and userId are left null: a camera reads a plate and nothing else.
-     * {@link com.example.Metropark.camera.consumer.ParkingCameraConsumer} resolves
-     * the rest.
-     */
     public Mono<Void> captureEntryEvent(String licensePlate, String locationId, String cameraId) {
         return capture(CameraEventType.CAR_ENTERED, licensePlate, locationId, cameraId);
     }

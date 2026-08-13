@@ -66,16 +66,6 @@ public class ParkingSlotRepository {
         ).map(this::mapToDto);
     }
 
-    /**
-     * Candidate slots for an entry, cheapest-first by id.
-     *
-     * <p>
-     * PostgreSQL is only a CANDIDATE source, never the decision: it still shows the
-     * pre-entry status until the lifecycle consumer catches up, so a slot listed
-     * here may already be occupied. The caller re-checks each candidate against
-     * Redis and claims it atomically before using it. {@code limit} keeps that
-     * re-check bounded rather than scanning the whole lot on every entry.
-     */
     public Flux<Integer> findAvailableSlotIds(String locationId, int limit) {
 
         var condition = field("current_status").eq("AVAILABLE");
@@ -104,12 +94,6 @@ public class ParkingSlotRepository {
         );
     }
 
-    /**
-     * {@code defaultIfEmpty(0)} guarantees a row count is always emitted. Without it
-     * an update that matches no row completes empty, every downstream flatMap is
-     * skipped, and the caller's {@code then(...)} continues as if the slot had been
-     * released.
-     */
     public Mono<Integer> updateStatus(Integer slotId, String status) {
 
         return Mono.from(

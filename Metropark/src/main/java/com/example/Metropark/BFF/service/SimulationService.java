@@ -1,7 +1,5 @@
 package com.example.Metropark.BFF.service;
 
-// import java.math.BigDecimal;
-// import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,8 +25,6 @@ import com.example.Metropark.BFF.dto.SimulationStateDto;
 import com.example.Metropark.camera.event.CameraEvent;
 import com.example.Metropark.camera.event.CameraEventPublisher;
 import com.example.Metropark.camera.event.CameraEventType;
-// import com.example.Metropark.event.Event;
-// import com.example.Metropark.event.ParkingEventSink;
 import com.example.Metropark.gate.repo.GateRepository;
 import com.example.Metropark.location.dto.LocationDto;
 import com.example.Metropark.location.repo.LocationRepository;
@@ -36,10 +32,9 @@ import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSlotDto;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.parking.service.ParkingLifecycleService;
-// import com.example.Metropark.parking.service.ParkingLifecycleService.ParkedVehicle;
 import com.example.Metropark.parking.service.ParkingSessionService;
 import com.example.Metropark.parking.service.ParkingSlotService;
-import com.example.Metropark.payments.repo.PaymentMethodRepository;
+import com.example.Metropark.payments.payment.repo.PaymentMethodRepository;
 import com.example.Metropark.reservation.service.ReservationClassService;
 import com.example.Metropark.user.dto.UserDto;
 import com.example.Metropark.user.repo.UserRepository;
@@ -55,73 +50,16 @@ import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
-/**
- * A bank of ANPR cameras watching a live parking lot, running until told to
- * stop.
- *
- * <p>
- * This class parks nothing. It reads number plates and says so; everything that
- * follows - slot allocation, sessions, payments, Redis, PostgreSQL - happens in
- * {@link com.example.Metropark.camera.consumer.ParkingCameraConsumer} after
- * RabbitMQ delivers the observation. Calling
- * {@link ParkingLifecycleService} from here would put the simulator on a code
- * path no real camera has, which is exactly what this refactor removed.
- *
- * <p>
- * Two independent loops drive it:
- *
- * <ul>
- * <li><b>Entry</b>, every 500ms, reports AT MOST ONE plate entering.
- * <li><b>Exit</b>, every 2s, reports AT MOST ONE plate leaving.
- * </ul>
- *
- * <p>
- * Neither loop ever terminates. Not when no user is free, not when every slot
- * is occupied, not when nothing is parked, and not when a tick throws or Redis
- * or RabbitMQ is briefly unreachable. A tick that cannot do its work does
- * nothing and waits for the next one. This is enforced structurally rather than
- * by hoping no exception escapes:
- *
- * <ul>
- * <li>every tick body ends in {@code onErrorResume} to an empty Mono, so a
- * failed tick is indistinguishable from an idle one to the interval above it;
- * <li>the interval itself carries an unbounded {@code retryWhen}, so even an
- * error raised outside the tick body (or a dropped-tick overflow) resubscribes
- * instead of completing;
- * <li>{@code concatMap} keeps at most one tick of a loop in flight, so a slow
- * tick delays the next one rather than racing it.
- * </ul>
- *
- * <p>
- * Because entry runs 4x as often as exit, the lot fills, entry then idles on
- * "every known plate is already inside", and each exit frees exactly one car
- * that the next entry tick can readmit. The simulation has no finished state.
- *
- * <p>
- * One consequence of the camera architecture is worth stating plainly: a tick
- * succeeding means the OBSERVATION was recorded and published, not that a car
- * parked. Whether parking followed is decided downstream and is visible in
- * {@code camera_events.status}. The counters below therefore count camera
- * events, which is the only thing this class is in a position to know.
- */
 @Service
 public class SimulationService {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(SimulationService.class);
 
-        /** Entry tick: one vehicle in, at most, every 500ms. */
         private static final Duration ENTRY_INTERVAL = Duration.ofSeconds(2);
-        /** Exit tick: one vehicle out, at most, every 2 seconds. */
         private static final Duration EXIT_INTERVAL = Duration.ofSeconds(2);
 
-        /** Slots the simulation ensures exist per location. */
         private static final int SLOTS_PER_LOCATION = 10;
 
-        /**
-         * A plate the cameras keep failing to report must not wedge the exit loop.
-         * After this many attempts the car is dropped from the simulator's view; the
-         * session it left behind is drained by adoption on the next run.
-         */
         private static final int MAX_EXIT_ATTEMPTS = 3;
 
         private static final Set<String> ADOPTABLE_SESSION_STATUSES = Set.of("RESERVED", "CREATED", "ACTIVE");
@@ -139,10 +77,6 @@ public class SimulationService {
         private final VehicleService vehicleService;
         private final ParkingSlotService parkingSlotService;
         private final ParkingSessionService parkingSessionService;
-        /**
-         * The ONLY way this class reaches the parking domain: by reporting what a
-         * camera saw. There is deliberately no ParkingLifecycleService here.
-         */
         private final CameraEventPublisher cameraEventPublisher;
         private final PaymentMethodRepository paymentMethodRepository;
         private final ParkingSlotRepository parkingSlotRepository;
@@ -158,33 +92,14 @@ public class SimulationService {
         private final AtomicBoolean simulationRunning = new AtomicBoolean(false);
         private final AtomicBoolean initializing = new AtomicBoolean(false);
 
-        /**
-         * Cars the cameras have seen enter and not yet seen leave, keyed by vehicle
-         * id.
-         *
-         * <p>
-         * Keyed by VEHICLE, not by session: the simulator publishes an observation and
-         * never learns what session id the consumer went on to create, so a
-         * session-keyed map would have nothing to put in it. The consumer resolves the
-         * session from the vehicle when the exit event arrives.
-         */
         private final ConcurrentHashMap<Integer, SeenVehicle> vehiclesInside = new ConcurrentHashMap<>();
-        /** The simulator's own view of occupancy, used only to bound how many cars it admits. */
         private final ConcurrentHashMap<Integer, String> slotStatus = new ConcurrentHashMap<>();
-        /** A user's car may be inside at most once at a time. */
         private final ConcurrentHashMap<String, Integer> userActiveSession = new ConcurrentHashMap<>();
-        /** Resolved vehicle per user, so entry does not re-query on every tick. */
         private final ConcurrentHashMap<String, Integer> userVehicle = new ConcurrentHashMap<>();
-        /** Plate per vehicle id - the only thing a camera actually reads. */
         private final ConcurrentHashMap<Integer, String> vehiclePlates = new ConcurrentHashMap<>();
         private final ConcurrentHashMap<Integer, Integer> exitAttempts = new ConcurrentHashMap<>();
         private final Set<String> generatedVehicleNumbers = ConcurrentHashMap.newKeySet();
 
-        /**
-         * What a camera needs to report a car again on its way out: the plate it will
-         * read, and who the car belongs to. {@code seenAt} makes the exit loop
-         * first-in-first-out.
-         */
         private record SeenVehicle(
                         Integer vehicleId,
                         String licensePlate,
@@ -229,12 +144,6 @@ public class SimulationService {
                 this.reservationClassService = reservationClassService;
         }
 
-        // ==================== Lifecycle ====================
-
-        /**
-         * Starts THE simulation. Calling it while one is already running is a no-op
-         * that reports RUNNING - there is only ever one simulation.
-         */
         public Mono<SimulationRunResponseDto> startSimulation() {
                 return Mono.defer(() -> {
                         if (!simulationRunning.compareAndSet(false, true)) {
@@ -250,10 +159,6 @@ public class SimulationService {
                         LOGGER.info("Starting continuous parking simulation");
                         emitEvent(context, "SIMULATION_STARTED", "Simulation started", null);
 
-                        // The loops start regardless of whether initialisation succeeds.
-                        // A failed load must not prevent the simulation from running - the
-                        // entry tick retries initialisation on its own and the loops simply
-                        // idle until data is there.
                         return initialize(context)
                                         .onErrorResume(error -> {
                                                 LOGGER.error("Simulation initialisation failed; loops will retry",
@@ -273,7 +178,6 @@ public class SimulationService {
                 });
         }
 
-        /** The only thing, besides shutdown, that ends the loops. */
         public Mono<SimulationRunResponseDto> stopSimulation() {
                 return Mono.fromSupplier(() -> {
                         SimulationRunContext context = currentSimulationContext;
@@ -319,24 +223,11 @@ public class SimulationService {
                 }
         }
 
-        /**
-         * An interval that cannot die.
-         *
-         * <p>
-         * {@code concatMap} serialises ticks; the tick body swallows its own errors;
-         * and {@code retryWhen} resubscribes on anything that still escapes - an
-         * overflow from {@code onBackpressureDrop}, or an error signalled by the
-         * interval itself. Only {@code dispose()} ends it.
-         */
         private Disposable startLoop(String name, Duration interval, java.util.function.Supplier<Mono<Void>> tick) {
                 return Flux.interval(interval, interval, Schedulers.parallel())
                                 .onBackpressureDrop(dropped -> LOGGER.debug(
                                                 "{} loop dropped tick {} (previous tick still running)", name,
                                                 dropped))
-                                // Mono.defer, so that a tick which throws SYNCHRONOUSLY while
-                                // assembling its pipeline becomes an error signal the
-                                // onErrorResume below can absorb. Calling tick.get() directly
-                                // lets such a throw propagate past it and tear down the loop.
                                 .concatMap(tickNumber -> Mono.defer(tick::get)
                                                 .onErrorResume(error -> {
                                                         LOGGER.error("{} loop tick {} failed; continuing", name,
@@ -354,20 +245,12 @@ public class SimulationService {
                                                 () -> LOGGER.info("{} loop completed", name));
         }
 
-        // ==================== Entry loop ====================
-
-        /**
-         * At most one vehicle parked. If no user or no slot is free, this does nothing
-         * and returns - the loop simply waits for the next tick.
-         */
         private Mono<Void> entryTick(SimulationRunContext context) {
                 if (!simulationRunning.get()) {
                         return Mono.empty();
                 }
 
                 if (cachedUsers.isEmpty() || slotStatus.isEmpty() || cachedPaymentMethodIds.isEmpty()) {
-                        // Data never loaded, or the database was down at start. Retry the
-                        // load from inside the loop instead of giving up on the simulation.
                         return reinitializeQuietly(context);
                 }
 
@@ -387,47 +270,26 @@ public class SimulationService {
 
                 UserDto user = freeUser.get();
 
-                // switchIfEmpty is attached to resolveVehicle ALONE. Attaching it to
-                // the whole chain instead made a successful observation - which
-                // completes empty - run the "no vehicle" fallback, releasing the slot
-                // and the user a moment after taking them, so one slot could be
-                // counted against any number of cars at once.
                 return resolveVehicle(user.userId())
-                        .switchIfEmpty(Mono.defer(() -> {
-                                releaseSlot(slotId);
-                                userActiveSession.remove(user.userId());
-                                emitEvent(context, "VEHICLE_UNAVAILABLE",
-                                                "Could not resolve a vehicle for user " + user.userId(), null);
-                                return Mono.empty();
-                        }))
-                        .flatMap(vehicle -> reportEntry(context, user, vehicle, slotId))
-                        .onErrorResume(error -> {
-                                // The claim must be undone or the slot and the user leak,
-                                // and the lot would slowly starve itself of both.
-                                releaseSlot(slotId);
-                                userActiveSession.remove(user.userId());
-                                LOGGER.error("Entry observation failed for user {} on slot {}",
-                                                user.userId(), slotId, error);
-                                emitEvent(context, "VEHICLE_ENTRY_FAILED", error.getMessage(), null);
-                                return Mono.empty();
-                        })
-                        .then();
+                                .switchIfEmpty(Mono.defer(() -> {
+                                        releaseSlot(slotId);
+                                        userActiveSession.remove(user.userId());
+                                        emitEvent(context, "VEHICLE_UNAVAILABLE",
+                                                        "Could not resolve a vehicle for user " + user.userId(), null);
+                                        return Mono.empty();
+                                }))
+                                .flatMap(vehicle -> reportEntry(context, user, vehicle, slotId))
+                                .onErrorResume(error -> {
+                                        releaseSlot(slotId);
+                                        userActiveSession.remove(user.userId());
+                                        LOGGER.error("Entry observation failed for user {} on slot {}",
+                                                        user.userId(), slotId, error);
+                                        emitEvent(context, "VEHICLE_ENTRY_FAILED", error.getMessage(), null);
+                                        return Mono.empty();
+                                })
+                                .then();
         }
 
-        /**
-         * Reports one plate entering, and stops there.
-         *
-         * <p>
-         * {@code slotId} is NOT sent: a camera cannot see which bay a car will take,
-         * so the consumer allocates one. The simulator holds the slot in its own
-         * ledger purely to stop itself admitting more cars than the lot can hold.
-         *
-         * <p>
-         * The vehicle is recorded as inside as soon as the observation is published,
-         * not when parking succeeds - the simulator never learns that. A car whose
-         * entry the consumer rejects therefore lingers here until the exit loop gives
-         * up on it after {@link #MAX_EXIT_ATTEMPTS}.
-         */
         private Mono<CameraEvent> reportEntry(
                         SimulationRunContext context,
                         UserDto user,
@@ -464,11 +326,6 @@ public class SimulationService {
                                 });
         }
 
-        /**
-         * Atomically takes one AVAILABLE slot. {@code replace(k, AVAILABLE, OCCUPIED)}
-         * is the compare-and-set that makes the claim safe against the exit loop
-         * releasing slots concurrently.
-         */
         private Optional<Integer> claimAvailableSlot() {
                 for (Map.Entry<Integer, String> entry : slotStatus.entrySet()) {
                         if (ParkingLifecycleService.SLOT_AVAILABLE.equals(entry.getValue())
@@ -485,16 +342,6 @@ public class SimulationService {
                 slotStatus.put(slotId, ParkingLifecycleService.SLOT_AVAILABLE);
         }
 
-        /**
-         * Gives one slot back to the simulator's ledger without saying which.
-         *
-         * <p>
-         * On exit the simulator genuinely does not know which bay the car was in - the
-         * consumer chose it and never reported back. Since the ledger exists only to
-         * cap how many cars are admitted, any occupied entry will do; the real slot
-         * status lives in Redis and PostgreSQL and is corrected there by the exit
-         * event.
-         */
         private void releaseOneSlot() {
                 for (Map.Entry<Integer, String> entry : slotStatus.entrySet()) {
                         if (ParkingLifecycleService.SLOT_OCCUPIED.equals(entry.getValue())
@@ -506,7 +353,6 @@ public class SimulationService {
                 }
         }
 
-        /** Cameras are named after the lot they watch, so the ids look plausible in the audit log. */
         private String entryCameraId(String parkingLotId) {
                 return "CAM-" + parkingLotId + "-ENTRY-" + (random.nextInt(2) + 1);
         }
@@ -519,12 +365,6 @@ public class SimulationService {
                 return cachedLocations.isEmpty() ? null : randomValue(cachedLocations).locationId();
         }
 
-        /**
-         * Takes one user who holds no session. {@code putIfAbsent} reserves them in the
-         * same step, so a later tick cannot pick the same user while this entry is
-         * still in flight. The sentinel is replaced with the real session id on
-         * success and removed on failure.
-         */
         private Optional<UserDto> claimFreeUser() {
                 for (UserDto user : cachedUsers) {
                         if (user.userId() != null
@@ -536,25 +376,11 @@ public class SimulationService {
                 return Optional.empty();
         }
 
-        /** Placeholder held in userActiveSession while an entry is in flight. */
         private static final Integer PENDING_SESSION = -1;
 
-        /**
-         * A car and the plate a camera would read off it.
-         *
-         * <p>
-         * The plate is what makes this the camera architecture rather than a rename:
-         * it is the only identifier that crosses the wire, so it has to be carried
-         * here rather than resolved later from a vehicle id the camera never saw.
-         */
         private record SimulatedVehicle(Integer vehicleId, String licensePlate) {
         }
 
-        /**
-         * The user's vehicle, reused across sessions. A user is only ever picked when
-         * their car is outside, so it is free by construction and no "already parked"
-         * check is needed.
-         */
         private Mono<SimulatedVehicle> resolveVehicle(String userId) {
                 Integer cachedId = userVehicle.get(userId);
                 String cachedPlate = cachedId == null ? null : vehiclePlates.get(cachedId);
@@ -565,16 +391,8 @@ public class SimulationService {
                 return vehicleService.getVehiclesByUserId(userId)
                                 .next()
                                 .map(vehicle -> new SimulatedVehicle(vehicle.vehicleId(), vehicle.vehicleNumber()))
-                                // getVehiclesByUserId reports "no vehicles" as an error rather
-                                // than an empty Flux; that is a normal case here, not a failure.
                                 .onErrorResume(error -> Mono.empty())
-                                // Mono.defer is required, not stylistic: switchIfEmpty
-                                // evaluates its argument eagerly, so without it
-                                // registerVehicleFor ran on EVERY tick and registered a
-                                // brand new vehicle for users who already had one.
                                 .switchIfEmpty(Mono.defer(() -> registerVehicleFor(userId)))
-                                // A car with no readable plate is invisible to a camera, so it
-                                // cannot take part in the simulation at all.
                                 .filter(vehicle -> vehicle.licensePlate() != null && vehicle.vehicleId() != null)
                                 .doOnNext(vehicle -> {
                                         userVehicle.put(userId, vehicle.vehicleId());
@@ -603,7 +421,8 @@ public class SimulationService {
 
                 return vehicleService.registerVehicle(vehicle)
                                 .then(vehicleService.getVehiclesByUserId(userId)
-                                                .filter(registered -> plate.equalsIgnoreCase(registered.vehicleNumber()))
+                                                .filter(registered -> plate
+                                                                .equalsIgnoreCase(registered.vehicleNumber()))
                                                 .next()
                                                 .map(registered -> new SimulatedVehicle(
                                                                 registered.vehicleId(), registered.vehicleNumber())));
@@ -624,12 +443,6 @@ public class SimulationService {
                 }
         }
 
-        // ==================== Exit loop ====================
-
-        /**
-         * At most one vehicle exited. If nothing is parked, this does nothing and
-         * returns - the loop waits for the next tick.
-         */
         private Mono<Void> exitTick(SimulationRunContext context) {
                 if (!simulationRunning.get()) {
                         return Mono.empty();
@@ -644,16 +457,10 @@ public class SimulationService {
                 }
 
                 SeenVehicle seen = oldest.get();
-                // Remove first: the vehicle is now owned by this tick, so a later tick
-                // cannot pick it again while the observation is in flight.
                 if (vehiclesInside.remove(seen.vehicleId()) == null) {
                         return Mono.empty();
                 }
 
-                // A car adopted from a previous run was never seen entering, so no lot
-                // was recorded for it. Fall back to a known one rather than emitting
-                // "CAM-null-EXIT-1" - the consumer resolves the exit from the plate and
-                // ignores the lot, but a null here makes the audit log unreadable.
                 String parkingLotId = seen.parkingLotId() != null ? seen.parkingLotId() : randomLocationId();
 
                 CameraEvent event = CameraEvent.of(
@@ -666,10 +473,6 @@ public class SimulationService {
 
                 return cameraEventPublisher.recordAndPublish(event)
                                 .doOnSuccess(published -> {
-                                        // The simulator frees its own bookkeeping as soon as the
-                                        // observation is out. Whether the session actually closed
-                                        // is the consumer's business and shows up in
-                                        // camera_events.status, not here.
                                         releaseOneSlot();
                                         userActiveSession.remove(seen.userId());
                                         exitAttempts.remove(seen.vehicleId());
@@ -689,11 +492,6 @@ public class SimulationService {
                                 .then();
         }
 
-        /**
-         * A car whose exit observation cannot be published is retried on later ticks,
-         * but not forever: one that can never be reported would otherwise be re-picked
-         * every 2 seconds and block every other car from leaving.
-         */
         private void handleFailedExit(SimulationRunContext context, SeenVehicle seen, Throwable error) {
                 int attempts = exitAttempts.merge(seen.vehicleId(), 1, Integer::sum);
                 LOGGER.error("Exit observation failed for plate {} (attempt {}/{})",
@@ -714,8 +512,6 @@ public class SimulationService {
                 emitEvent(context, "CAMERA_EXIT_FAILED", error.getMessage(), null);
         }
 
-        // ==================== Initialisation ====================
-
         private void resetSimulationState() {
                 vehiclesInside.clear();
                 vehiclePlates.clear();
@@ -726,11 +522,6 @@ public class SimulationService {
                 generatedVehicleNumbers.clear();
         }
 
-        /**
-         * Reloads reference data from inside the entry loop when the caches are empty.
-         * Guarded so only one attempt runs at a time; a failure is logged and the tick
-         * ends normally, leaving the loop to try again later.
-         */
         private Mono<Void> reinitializeQuietly(SimulationRunContext context) {
                 if (!initializing.compareAndSet(false, true)) {
                         return Mono.empty();
@@ -791,18 +582,6 @@ public class SimulationService {
                                 .then();
         }
 
-        /**
-         * Cars left inside by a previous run are taken over so the exit loop can send
-         * them back out. Without this their slots would stay occupied forever and the
-         * lot would run permanently below capacity.
-         *
-         * <p>
-         * Reactive, unlike the version this replaces, because adoption now needs the
-         * number PLATE and a session row only carries a vehicle id. A camera reports
-         * plates, so a car whose plate cannot be resolved cannot be reported leaving
-         * and is deliberately not adopted - claiming it and then being unable to emit
-         * its exit would occupy a user forever.
-         */
         private Mono<Void> adoptExistingSessions(List<ParkingSessionDto> sessions) {
                 return Flux.fromIterable(sessions)
                                 .filter(session -> session.sessionId() != null
@@ -831,11 +610,6 @@ public class SimulationService {
                                 .then();
         }
 
-        /**
-         * Reuses the slots already in the database and tops each location up to
-         * {@link #SLOTS_PER_LOCATION}. The previous implementation created a fresh
-         * batch on every start, so the lot grew without bound across runs.
-         */
         private Mono<Void> ensureSlots(SimulationRunContext context, List<Integer> reservationClassIds) {
                 if (cachedLocations.isEmpty()) {
                         emitEvent(context, "NO_LOCATIONS", "No locations found in database", null);
@@ -911,15 +685,7 @@ public class SimulationService {
                                 });
         }
 
-        /**
-         * Seeds the claim ledger from the database. A slot that is already OCCUPIED by
-         * someone else stays that way; only genuinely free slots are offered to the
-         * entry loop.
-         */
         private void seedSlotStatus(List<ParkingSlotDto> slots) {
-                // No cross-check against adopted cars any more: the simulator no longer
-                // knows which slot any car is in, so the slot's own status - which the
-                // lifecycle consumer keeps current - is the only thing to go on.
                 for (ParkingSlotDto slot : slots) {
                         if (slot.slotId() == null) {
                                 continue;
@@ -945,14 +711,10 @@ public class SimulationService {
                         try {
                                 highest = Math.max(highest, Integer.parseInt(parts[1]));
                         } catch (NumberFormatException ignored) {
-                                // display codes that are not "<suffix>-<number>" simply do not
-                                // participate in sequence numbering
                         }
                 }
                 return highest;
         }
-
-        // ==================== Reporting ====================
 
         private SimulationRunResponseDto buildRunResponse(String status, SimulationRunContext context) {
                 String loopState = simulationRunning.get() ? "RUNNING" : "STOPPED";
@@ -963,10 +725,6 @@ public class SimulationService {
                                                 String.valueOf(vehiclesInside.size())),
                                 new SimulationStateDto("Slots", "Available",
                                                 String.valueOf(availableSlotCount())),
-                                // "Observed", not "Parked". These count camera events published,
-                                // which is all this class does. Reporting them as sessions or
-                                // payments would claim an outcome only the consumer knows -
-                                // camera_events.status is where that lives.
                                 new SimulationStateDto("Entries", "Observed",
                                                 String.valueOf(context.vehicleEntries.get())),
                                 new SimulationStateDto("Exits", "Observed",
@@ -993,19 +751,9 @@ public class SimulationService {
         }
 
         private static final class SimulationRunContext {
-                /**
-                 * Bounded: the simulation runs indefinitely, so an unbounded event list
-                 * would be a slow memory leak. Only the most recent events are kept for
-                 * the run-response snapshot; the SSE stream carries the full sequence.
-                 */
                 private static final int MAX_RETAINED_EVENTS = 200;
 
                 private final List<SimulationEventDto> events = Collections.synchronizedList(new ArrayList<>());
-                /**
-                 * Camera events published, entry and exit. There are no payment counters:
-                 * the simulator creates no payments, and keeping fields that could only
-                 * ever read zero would misreport the pipeline as broken.
-                 */
                 private final AtomicInteger vehicleEntries = new AtomicInteger();
                 private final AtomicInteger vehicleExits = new AtomicInteger();
 

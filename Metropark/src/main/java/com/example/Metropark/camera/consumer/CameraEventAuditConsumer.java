@@ -14,23 +14,6 @@ import com.example.Metropark.config.RabbitMQConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
-/**
- * Keeps {@code camera_events.status} honest. Contains no parking logic and
- * touches no parking table.
- *
- * <p>
- * It reads its own copy of every camera event from
- * {@value RabbitMQConfig#CAMERA_AUDIT_QUEUE}, bound to the same topic exchange as
- * the processing queue. Because the two queues are independent, this consumer
- * has no idea whether parking succeeded - and must not guess. It records only
- * the one fact it can actually witness: the event reached the pipeline. The
- * terminal PROCESSED / FAILED verdict is written by
- * {@link ParkingCameraConsumer}, which is the only party that knows it.
- *
- * <p>
- * That split is why the update is conditional - see
- * {@link CameraEventRepository#markProcessingIfReceived}.
- */
 @Component
 public class CameraEventAuditConsumer {
 

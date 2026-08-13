@@ -9,10 +9,10 @@ import com.example.Metropark.location.dto.LocationTypeDto;
 import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSessionResponseDto;
 import com.example.Metropark.parking.dto.ParkingSlotDto;
-import com.example.Metropark.payments.dto.PaymentDto;
-import com.example.Metropark.payments.dto.PaymentMethodDto;
-import com.example.Metropark.payments.dto.PaymentStatusUpdateDto;
-import com.example.Metropark.payments.dto.PricingRateDto;
+import com.example.Metropark.payments.payment.dto.PaymentDto;
+import com.example.Metropark.payments.payment.dto.PaymentMethodDto;
+import com.example.Metropark.payments.payment.dto.PaymentStatusUpdateDto;
+import com.example.Metropark.payments.pricing.dto.PricingRateDto;
 import com.example.Metropark.queue.dto.QueueDto;
 import com.example.Metropark.reservation.dto.ReservationClassDto;
 import com.example.Metropark.reservation.dto.ReservationDto;
@@ -96,7 +96,8 @@ public final class TestFixtures {
     }
 
     public static ReservationDto reservationDto() {
-        return new ReservationDto(1, "USR-1494", 5, null, "RESERVED", 1, FIXED_TIME, FIXED_TIME.plusMinutes(30), FIXED_TIME,
+        return new ReservationDto(1, "USR-1494", 5, null, "RESERVED", 1, FIXED_TIME, FIXED_TIME.plusMinutes(30),
+                FIXED_TIME,
                 FIXED_TIME);
     }
 
