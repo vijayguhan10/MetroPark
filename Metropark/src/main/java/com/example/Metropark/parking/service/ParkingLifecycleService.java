@@ -108,6 +108,7 @@ public class ParkingLifecycleService {
         private final RedisStateService redisStateService;
         private final EventPublisher eventPublisher;
         private final DistributedLockService lockService;
+        private final com.example.Metropark.user.repo.UserRepository userRepository;
 
         public ParkingLifecycleService(
                         ParkingSessionRepository sessionRepository,
@@ -115,7 +116,8 @@ public class ParkingLifecycleService {
                         PaymentRepository paymentRepository,
                         RedisStateService redisStateService,
                         EventPublisher eventPublisher,
-                        DistributedLockService lockService) {
+                        DistributedLockService lockService,
+                        com.example.Metropark.user.repo.UserRepository userRepository) {
 
                 this.sessionRepository = sessionRepository;
                 this.slotRepository = slotRepository;
@@ -123,6 +125,7 @@ public class ParkingLifecycleService {
                 this.redisStateService = redisStateService;
                 this.eventPublisher = eventPublisher;
                 this.lockService = lockService;
+                this.userRepository = userRepository;
         }
 
         /**
@@ -156,68 +159,98 @@ public class ParkingLifecycleService {
                         BigDecimal amount,
                         String currency) {
 
-                return Mono.zip(sessionRepository.allocateSessionId(), paymentRepository.allocatePaymentId())
+                // 1. Entry check: Verify user is not SUSPENDED
+                return userRepository.findById(userId)
+                                .flatMap(user -> {
+                                        if (user != null && "SUSPENDED".equalsIgnoreCase(user.userStatus())) {
+                                                LOGGER.warn("ENTRY REJECTED | user {} is SUSPENDED", userId);
+                                                return Mono.<ParkedVehicle>error(new IllegalStateException(
+                                                                "Vehicle entry blocked: User " + userId
+                                                                                + " is SUSPENDED."));
+                                        }
+                                        return Mono.empty();
+                                })
+                                .then(Mono.zip(sessionRepository.allocateSessionId(),
+                                                paymentRepository.allocatePaymentId()))
                                 .flatMap(ids -> {
                                         Integer sessionId = ids.getT1();
                                         Long paymentId = ids.getT2();
                                         LocalDateTime now = LocalDateTime.now();
 
-                                        SessionEventPayload session = new SessionEventPayload(
-                                                        sessionId,
-                                                        null,
-                                                        slotId,
-                                                        userId,
-                                                        vehicleId,
-                                                        entryGateId,
-                                                        entryGateId,
-                                                        SESSION_CREATED,
-                                                        now,
-                                                        null,
-                                                        null,
-                                                        0,
-                                                        PAYMENT_PENDING,
-                                                        INITIAL_VERSION,
-                                                        now);
-
-                                        PaymentEventPayload payment = new PaymentEventPayload(
-                                                        paymentId,
-                                                        "TXN-" + sessionId + "-" + paymentId,
-                                                        sessionId,
-                                                        userId,
-                                                        methodId,
-                                                        amount,
-                                                        currency,
-                                                        PAYMENT_PENDING,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        now);
-
                                         return currentSlot(slotId)
-                                                        .map(slot -> withStatus(slot, SLOT_OCCUPIED, now))
-                                                        .switchIfEmpty(Mono.error(new IllegalStateException(
-                                                                        "Cannot park: slot " + slotId
-                                                                                        + " is unknown to Redis and to PostgreSQL.")))
-                                                        // Redis first, all three, and only then the publish - built
-                                                        // from what Redis actually stored.
-                                                        .flatMap(slot -> redisStateService
-                                                                        .saveSessionState(session, INITIAL_VERSION)
-                                                                        .flatMap(storedSession -> redisStateService
-                                                                                        .saveSlotState(slot,
-                                                                                                        INITIAL_VERSION)
-                                                                                        .flatMap(storedSlot -> redisStateService
-                                                                                                        .savePaymentState(
-                                                                                                                        payment,
-                                                                                                                        INITIAL_VERSION)
-                                                                                                        .flatMap(storedPayment -> eventPublisher
-                                                                                                                        .publishVehicleEntry(
-                                                                                                                                        new ParkingLifecycleEventPayload(
-                                                                                                                                                        storedSession,
-                                                                                                                                                        storedSlot,
-                                                                                                                                                        storedPayment,
-                                                                                                                                                        null,
-                                                                                                                                                        INITIAL_VERSION),
-                                                                                                                                        INITIAL_VERSION)))))
+                                                        .flatMap(slot -> slotRepository
+                                                                        .getOccupancyRate(slot.locationId())
+                                                                        .map(occupancy -> {
+                                                                                BigDecimal surgeMultiplier = occupancy > 0.80
+                                                                                                ? new BigDecimal("1.50")
+                                                                                                : new BigDecimal(
+                                                                                                                "1.00");
+                                                                                LOGGER.info("ENTRY SURGE CALCULATED | slot={} lot={} occupancy={} surge={}",
+                                                                                                slotId,
+                                                                                                slot.locationId(),
+                                                                                                occupancy,
+                                                                                                surgeMultiplier);
+                                                                                return surgeMultiplier;
+                                                                        })
+                                                                        .flatMap(surgeMultiplier -> {
+                                                                                SessionEventPayload session = new SessionEventPayload(
+                                                                                                sessionId,
+                                                                                                null,
+                                                                                                slotId,
+                                                                                                userId,
+                                                                                                vehicleId,
+                                                                                                entryGateId,
+                                                                                                entryGateId,
+                                                                                                SESSION_CREATED,
+                                                                                                now,
+                                                                                                null,
+                                                                                                null,
+                                                                                                0,
+                                                                                                PAYMENT_PENDING,
+                                                                                                surgeMultiplier,
+                                                                                                INITIAL_VERSION,
+                                                                                                now);
+
+                                                                                PaymentEventPayload payment = new PaymentEventPayload(
+                                                                                                paymentId,
+                                                                                                "TXN-" + sessionId + "-"
+                                                                                                                + paymentId,
+                                                                                                sessionId,
+                                                                                                userId,
+                                                                                                methodId,
+                                                                                                amount,
+                                                                                                currency,
+                                                                                                PAYMENT_PENDING,
+                                                                                                null,
+                                                                                                null,
+                                                                                                null,
+                                                                                                now);
+
+                                                                                SlotEventPayload occupiedSlot = withStatus(
+                                                                                                slot, SLOT_OCCUPIED,
+                                                                                                now);
+
+                                                                                return redisStateService
+                                                                                                .saveSessionState(
+                                                                                                                session,
+                                                                                                                INITIAL_VERSION)
+                                                                                                .flatMap(storedSession -> redisStateService
+                                                                                                                .saveSlotState(occupiedSlot,
+                                                                                                                                INITIAL_VERSION)
+                                                                                                                .flatMap(storedSlot -> redisStateService
+                                                                                                                                .savePaymentState(
+                                                                                                                                                payment,
+                                                                                                                                                INITIAL_VERSION)
+                                                                                                                                .flatMap(storedPayment -> eventPublisher
+                                                                                                                                                .publishVehicleEntry(
+                                                                                                                                                                new ParkingLifecycleEventPayload(
+                                                                                                                                                                                storedSession,
+                                                                                                                                                                                storedSlot,
+                                                                                                                                                                                storedPayment,
+                                                                                                                                                                                null,
+                                                                                                                                                                                INITIAL_VERSION),
+                                                                                                                                                                INITIAL_VERSION))));
+                                                                        }))
                                                         .thenReturn(new ParkedVehicle(sessionId, slotId, paymentId,
                                                                         userId, vehicleId, now));
                                 })
@@ -356,6 +389,10 @@ public class ParkingLifecycleService {
                                                         ? 0
                                                         : (int) Duration.between(entryTime, now).toMinutes();
 
+                                        BigDecimal surgeMultiplier = session.surgeMultiplier() == null
+                                                        ? BigDecimal.ONE
+                                                        : session.surgeMultiplier();
+
                                         SessionEventPayload exited = new SessionEventPayload(
                                                         session.sessionId(),
                                                         session.reservationId(),
@@ -369,135 +406,48 @@ public class ParkingLifecycleService {
                                                         now,
                                                         session.expectedExitTime(),
                                                         durationMinutes,
-                                                        SESSION_PAYMENT_PAID,
+                                                        PAYMENT_PENDING,
+                                                        surgeMultiplier,
                                                         newVersion,
                                                         now);
 
                                         Integer slotId = session.slotId() == null ? parked.slotId() : session.slotId();
 
-                                        // Resolve payment first (needed for separate publish)
-                                        return resolvePaidPayment(parked, sessionId, now)
+                                        return currentSlot(slotId)
+                                                        .map(slot -> withStatus(slot, SLOT_AVAILABLE, now))
                                                         .switchIfEmpty(Mono.error(new IllegalStateException(
-                                                                        "Cannot exit session " + sessionId
-                                                                                        + ": no payment is known to Redis or to PostgreSQL.")))
-                                                        .flatMap(payment -> {
-                                                                // Randomly determine payment outcome:
-                                                                // 30% PENDING, 10% FAILED, 60% SUCCESS
-                                                                double r = RANDOM.nextDouble();
-                                                                String paymentStatus;
-                                                                String sessionPaymentStatus;
-                                                                if (r < PAYMENT_PENDING_RATE) {
-                                                                        paymentStatus = PAYMENT_PENDING;
-                                                                        sessionPaymentStatus = PAYMENT_PENDING;
-                                                                } else if (r < PAYMENT_PENDING_RATE
-                                                                                + PAYMENT_FAILURE_RATE) {
-                                                                        paymentStatus = PAYMENT_FAILED;
-                                                                        sessionPaymentStatus = SESSION_PAYMENT_FAILED;
-                                                                } else {
-                                                                        paymentStatus = PAYMENT_SUCCESS;
-                                                                        sessionPaymentStatus = SESSION_PAYMENT_PAID;
-                                                                }
-
-                                                                // Update payment status
-                                                                PaymentEventPayload paidPayment = new PaymentEventPayload(
-                                                                                payment.paymentId(),
-                                                                                payment.transactionReference(),
-                                                                                payment.sessionId(),
-                                                                                payment.userId(),
-                                                                                payment.methodId(),
-                                                                                payment.amount(),
-                                                                                payment.currency(),
-                                                                                paymentStatus,
-                                                                                payment.gatewayResponseCode(),
-                                                                                payment.gatewayResponseMessage(),
-                                                                                now,
-                                                                                now);
-
-                                                                // Update session payment status based on outcome
-                                                                SessionEventPayload finalExited = new SessionEventPayload(
-                                                                                exited.sessionId(),
-                                                                                exited.reservationId(),
-                                                                                exited.slotId(),
-                                                                                exited.userId(),
-                                                                                exited.vehicleId(),
-                                                                                exited.entryGateId(),
-                                                                                exited.exitGateId(),
-                                                                                exited.sessionStatus(),
-                                                                                exited.actualEntryTime(),
-                                                                                exited.actualExitTime(),
-                                                                                exited.expectedExitTime(),
-                                                                                exited.durationMinutes(),
-                                                                                sessionPaymentStatus,
-                                                                                exited.sessionVersion(),
-                                                                                exited.updatedAt());
-
-                                                                // Save session and slot to Redis (lifecycle)
-                                                                return currentSlot(slotId)
-                                                                                .map(slot -> withStatus(slot,
-                                                                                                SLOT_AVAILABLE, now))
-                                                                                .switchIfEmpty(Mono.error(
-                                                                                                new IllegalStateException(
-                                                                                                                "Cannot exit session "
-                                                                                                                                + sessionId
-                                                                                                                                + ": slot "
-                                                                                                                                + slotId
-                                                                                                                                + " is unknown to Redis and to PostgreSQL.")))
-                                                                                .flatMap(slot -> redisStateService
-                                                                                                .saveSessionState(
-                                                                                                                finalExited,
-                                                                                                                newVersion)
-                                                                                                .flatMap(storedSession -> redisStateService
-                                                                                                                .saveSlotState(slot,
-                                                                                                                                newVersion)
-                                                                                                                .flatMap(storedSlot -> {
-                                                                                                                        // Save
-                                                                                                                        // payment
-                                                                                                                        // to
-                                                                                                                        // Redis
-                                                                                                                        // separately
-                                                                                                                        return redisStateService
-                                                                                                                                        .savePaymentState(
-                                                                                                                                                        paidPayment,
-                                                                                                                                                        newVersion)
-                                                                                                                                        .flatMap(storedPayment -> {
-                                                                                                                                                // Publish
-                                                                                                                                                // lifecycle
-                                                                                                                                                // event
-                                                                                                                                                // (session
-                                                                                                                                                // +
-                                                                                                                                                // slot)
-                                                                                                                                                return eventPublisher
-                                                                                                                                                                .publishVehicleExit(
-                                                                                                                                                                                new ParkingLifecycleEventPayload(
-                                                                                                                                                                                                storedSession,
-                                                                                                                                                                                                storedSlot,
-                                                                                                                                                                                                null, // payment
-                                                                                                                                                                                                      // is
-                                                                                                                                                                                                      // separate
-                                                                                                                                                                                                expectedVersion,
-                                                                                                                                                                                                newVersion),
-                                                                                                                                                                                newVersion)
-                                                                                                                                                                .then(
-                                                                                                                                                                                // Publish
-                                                                                                                                                                                // payment
-                                                                                                                                                                                // event
-                                                                                                                                                                                // separately
-                                                                                                                                                                                // (third-party)
-                                                                                                                                                                                eventPublisher.publishPaymentCompleted(
-                                                                                                                                                                                                storedPayment,
-                                                                                                                                                                                                newVersion))
-                                                                                                                                                                .doOnSuccess(ignored -> LOGGER
-                                                                                                                                                                                .info(
-                                                                                                                                                                                                "EXIT | session={} slot={} payment={} status={} version {}->{} written to Redis and published (payment separate)",
-                                                                                                                                                                                                sessionId,
-                                                                                                                                                                                                slotId,
-                                                                                                                                                                                                storedPayment.paymentId(),
-                                                                                                                                                                                                paymentStatus,
-                                                                                                                                                                                                expectedVersion,
-                                                                                                                                                                                                newVersion));
-                                                                                                                                        });
-                                                                                                                })));
-                                                        });
+                                                                        "Cannot exit session " + sessionId + ": slot "
+                                                                                        + slotId
+                                                                                        + " is unknown to Redis and to PostgreSQL.")))
+                                                        .flatMap(slot -> redisStateService
+                                                                        .saveSessionState(exited, newVersion)
+                                                                        .flatMap(storedSession -> redisStateService
+                                                                                        .saveSlotState(slot, newVersion)
+                                                                                        .flatMap(storedSlot -> eventPublisher
+                                                                                                        .publishVehicleExit(
+                                                                                                                        new ParkingLifecycleEventPayload(
+                                                                                                                                        storedSession,
+                                                                                                                                        storedSlot,
+                                                                                                                                        null,
+                                                                                                                                        expectedVersion,
+                                                                                                                                        newVersion),
+                                                                                                                        newVersion)
+                                                                                                        .then(eventPublisher
+                                                                                                                        .publishBillingRequested(
+                                                                                                                                        new com.example.Metropark.event.payload.BillingRequestedEventPayload(
+                                                                                                                                                        "evt-" + System.currentTimeMillis()
+                                                                                                                                                                        + "-"
+                                                                                                                                                                        + sessionId,
+                                                                                                                                                        sessionId,
+                                                                                                                                                        session.userId(),
+                                                                                                                                                        session.vehicleId())))
+                                                                                                        .doOnSuccess(ignored -> LOGGER
+                                                                                                                        .info(
+                                                                                                                                        "EXIT | session={} slot={} version {}->{} published VEHICLE_EXIT & BILLING_REQUESTED",
+                                                                                                                                        sessionId,
+                                                                                                                                        slotId,
+                                                                                                                                        expectedVersion,
+                                                                                                                                        newVersion)))));
                                 })
                                 .then();
         }
@@ -563,23 +513,25 @@ public class ParkingLifecycleService {
          */
         private Mono<SessionEventPayload> currentSession(Integer sessionId) {
                 return redisStateService.getSession(sessionId)
-                                .switchIfEmpty(sessionRepository.findById(sessionId)
-                                                .map(session -> new SessionEventPayload(
-                                                                session.sessionId(),
-                                                                session.reservationId(),
-                                                                session.slotId(),
-                                                                session.userId(),
-                                                                session.vehicleId(),
-                                                                session.entryGateId(),
-                                                                session.exitGateId(),
-                                                                session.sessionStatus(),
-                                                                session.actualEntryTime(),
-                                                                session.actualExitTime(),
-                                                                session.expectedExitTime(),
-                                                                session.durationMinutes(),
-                                                                session.paymentStatus(),
-                                                                session.sessionVersion(),
-                                                                session.updatedAt())));
+                                .switchIfEmpty(
+                                                sessionRepository.findById(sessionId)
+                                                                .map(session -> new SessionEventPayload(
+                                                                                session.sessionId(),
+                                                                                session.reservationId(),
+                                                                                session.slotId(),
+                                                                                session.userId(),
+                                                                                session.vehicleId(),
+                                                                                session.entryGateId(),
+                                                                                session.exitGateId(),
+                                                                                session.sessionStatus(),
+                                                                                session.actualEntryTime(),
+                                                                                session.actualExitTime(),
+                                                                                session.expectedExitTime(),
+                                                                                session.durationMinutes(),
+                                                                                session.paymentStatus(),
+                                                                                session.surgeMultiplier(),
+                                                                                session.sessionVersion(),
+                                                                                session.updatedAt())));
         }
 
         /**
@@ -612,4 +564,5 @@ public class ParkingLifecycleService {
                                 status,
                                 at);
         }
+
 }

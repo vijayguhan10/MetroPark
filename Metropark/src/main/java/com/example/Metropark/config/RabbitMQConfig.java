@@ -61,6 +61,18 @@ public class RabbitMQConfig {
 
     public static final String PAYMENT_FAILED_KEY = "payment.failed";
 
+    public static final String BILLING_EVENTS_QUEUE = "parking.billing.events";
+
+    public static final String BILLING_EVENTS_DLQ = "parking.billing.events.dlq";
+
+    public static final String BILLING_REQUESTED_KEY = "billing.requested";
+
+    public static final String NOTIFICATION_EVENTS_QUEUE = "parking.notification.events";
+
+    public static final String NOTIFICATION_EVENTS_DLQ = "parking.notification.events.dlq";
+
+    public static final String NOTIFICATION_EVENT_KEY = "notification.event";
+
     @Bean
     public MessageConverter messageConverter(
             ObjectMapper objectMapper) {
@@ -249,6 +261,47 @@ public class RabbitMQConfig {
                 .to(parkingEventsExchange())
                 .with(PAYMENT_FAILED_KEY);
     }
+
+    @Bean
+    public Queue billingEventsDLQ() {
+        return QueueBuilder.durable(BILLING_EVENTS_DLQ).build();
+    }
+
+    @Bean
+    public Queue notificationEventsDLQ() {
+        return QueueBuilder.durable(NOTIFICATION_EVENTS_DLQ).build();
+    }
+
+    @Bean
+    public Queue billingEventsQueue() {
+        return QueueBuilder.durable(BILLING_EVENTS_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", BILLING_EVENTS_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue notificationEventsQueue() {
+        return QueueBuilder.durable(NOTIFICATION_EVENTS_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", NOTIFICATION_EVENTS_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Binding billingRequestedBinding() {
+        return BindingBuilder.bind(billingEventsQueue())
+                .to(parkingEventsExchange())
+                .with(BILLING_REQUESTED_KEY);
+    }
+
+    @Bean
+    public Binding notificationEventBinding() {
+        return BindingBuilder.bind(notificationEventsQueue())
+                .to(parkingEventsExchange())
+                .with(NOTIFICATION_EVENT_KEY);
+    }
+
 
     private static final String CAMERA_ALL_KEYS = "camera.car.*";
 

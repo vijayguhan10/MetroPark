@@ -1,5 +1,6 @@
 package com.example.Metropark.parking.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
@@ -190,6 +191,7 @@ public class ParkingSessionService {
                                                                                                         : dto.paymentStatus()
                                                                                                                         .trim()
                                                                                                                         .toUpperCase(),
+                                                                        BigDecimal.ONE,
                                                                         1,
                                                                         now,
                                                                         now);
@@ -213,6 +215,7 @@ public class ParkingSessionService {
                                                                                                 session.expectedExitTime(),
                                                                                                 session.durationMinutes(),
                                                                                                 session.paymentStatus(),
+                                                                                                session.surgeMultiplier(),
                                                                                                 (int) version,
                                                                                                 now);
 
@@ -428,6 +431,7 @@ public class ParkingSessionService {
                                 dto.expectedExitTime(),
                                 dto.durationMinutes(),
                                 dto.paymentStatus(),
+                                dto.surgeMultiplier(),
                                 dto.sessionVersion(),
                                 LocalDateTime.now());
         }
@@ -449,6 +453,7 @@ public class ParkingSessionService {
                                 payload.expectedExitTime(),
                                 payload.durationMinutes(),
                                 payload.paymentStatus(),
+                                payload.surgeMultiplier(),
                                 payload.sessionVersion(),
                                 payload.updatedAt(),
                                 payload.updatedAt());

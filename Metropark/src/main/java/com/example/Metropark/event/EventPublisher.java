@@ -94,6 +94,37 @@ public class EventPublisher {
                                 event);
         }
 
+        public Mono<Void> publishBillingRequested(
+                        com.example.Metropark.event.payload.BillingRequestedEventPayload payload) {
+
+                Event event = Event.of(
+                                RabbitMQConfig.BILLING_REQUESTED_KEY,
+                                payload.eventId(),
+                                1,
+                                payload);
+
+                return publish(
+                                RabbitMQConfig.PARKING_EVENTS_EXCHANGE,
+                                RabbitMQConfig.BILLING_REQUESTED_KEY,
+                                event);
+        }
+
+        public Mono<Void> publishNotificationEvent(
+                        com.example.Metropark.event.payload.NotificationEventPayload payload) {
+
+                Event event = Event.of(
+                                RabbitMQConfig.NOTIFICATION_EVENT_KEY,
+                                payload.eventId(),
+                                1,
+                                payload);
+
+                return publish(
+                                RabbitMQConfig.PARKING_EVENTS_EXCHANGE,
+                                RabbitMQConfig.NOTIFICATION_EVENT_KEY,
+                                event);
+        }
+
+
         private Mono<Void> publish(
                         String exchange,
                         String routingKey,

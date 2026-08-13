@@ -1,6 +1,7 @@
 package com.example.Metropark.parking.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record ParkingSessionDto(
@@ -17,6 +18,7 @@ public record ParkingSessionDto(
     @JsonProperty("expectedExitTime") LocalDateTime expectedExitTime,
     @JsonProperty("durationMinutes") Integer durationMinutes,
     @JsonProperty("paymentStatus") String paymentStatus,
+    @JsonProperty("surgeMultiplier") BigDecimal surgeMultiplier,
     @JsonProperty("sessionVersion") Integer sessionVersion,
     @JsonProperty("createdAt") LocalDateTime createdAt,
     @JsonProperty("updatedAt") LocalDateTime updatedAt

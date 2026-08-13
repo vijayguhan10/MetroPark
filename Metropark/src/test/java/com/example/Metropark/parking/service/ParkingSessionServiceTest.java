@@ -1,5 +1,7 @@
 package com.example.Metropark.parking.service;
 
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,7 +63,8 @@ class ParkingSessionServiceTest {
                                 null,
                                 null,
                                 null,
-                                null,
+                                "PENDING",
+                                BigDecimal.ONE,
                                 null,
                                 null,
                                 null);
@@ -108,7 +111,8 @@ class ParkingSessionServiceTest {
                                 null,
                                 null,
                                 null,
-                                null,
+                                "PENDING",
+                                BigDecimal.ONE,
                                 null,
                                 null,
                                 null);
@@ -134,7 +138,8 @@ class ParkingSessionServiceTest {
                                 null,
                                 null,
                                 null,
-                                null,
+                                "PENDING",
+                                BigDecimal.ONE,
                                 null,
                                 null,
                                 null);

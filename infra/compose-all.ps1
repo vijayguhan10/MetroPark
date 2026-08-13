@@ -74,7 +74,7 @@ switch -Exact ($Cmd.ToLower()) {
     "up" {
         Write-Host "Starting infrastructure services..." -ForegroundColor Green
         
-        $Services = @("kafka", "rabbitmq", "redis", "postgres", "observability")
+        $Services = @( "rabbitmq", "redis", "postgres", "observability")
         foreach ($Service in $Services) {
             $Ec = Invoke-Compose -ServiceDir $Service -Action "up" -AdditionalArgs $ExtraArgs
             if ($Ec -ne 0) { exit $Ec }
@@ -85,7 +85,7 @@ switch -Exact ($Cmd.ToLower()) {
         Write-Host "Stopping infrastructure services..." -ForegroundColor Yellow
         
         # Stops in reverse order: observability, postgres, redis, rabbitmq, kafka
-        $Services = @("observability", "postgres", "redis", "rabbitmq", "kafka")
+        $Services = @("observability", "postgres", "redis", "rabbitmq")
         foreach ($Service in $Services) {
             Invoke-Compose -ServiceDir $Service -Action "down" -AdditionalArgs $ExtraArgs
         }

@@ -88,6 +88,7 @@ public class ParkingLifecycleRepository {
                                                         field("expected_exit_time"),
                                                         field("duration_minutes"),
                                                         field("payment_status"),
+                                                        field("surge_multiplier"),
                                                         field("session_version"),
                                                         field("created_at"),
                                                         field("updated_at"))
@@ -105,6 +106,7 @@ public class ParkingLifecycleRepository {
                                                         session.expectedExitTime(),
                                                         session.durationMinutes(),
                                                         session.paymentStatus(),
+                                                        session.surgeMultiplier() != null ? session.surgeMultiplier() : java.math.BigDecimal.ONE,
                                                         session.sessionVersion(),
                                                         session.updatedAt(),
                                                         session.updatedAt())

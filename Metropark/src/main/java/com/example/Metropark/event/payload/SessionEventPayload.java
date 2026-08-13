@@ -1,5 +1,6 @@
 package com.example.Metropark.event.payload;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,6 +19,7 @@ public record SessionEventPayload(
         @JsonProperty("expectedExitTime") LocalDateTime expectedExitTime,
         @JsonProperty("durationMinutes") Integer durationMinutes,
         @JsonProperty("paymentStatus") String paymentStatus,
+        @JsonProperty("surgeMultiplier") BigDecimal surgeMultiplier,
         @JsonProperty("sessionVersion") Integer sessionVersion,
         @JsonProperty("updatedAt") LocalDateTime updatedAt
 ) {}
