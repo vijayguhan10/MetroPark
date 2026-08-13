@@ -16,7 +16,7 @@ import com.example.Metropark.event.payload.SessionEventPayload;
 import com.example.Metropark.event.payload.SlotEventPayload;
 import com.example.Metropark.parking.repo.ParkingSessionRepository;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
-import com.example.Metropark.payments.repo.PaymentRepository;
+import com.example.Metropark.payments.payment.repo.PaymentRepository;
 import com.example.Metropark.redis.DistributedLockService;
 import com.example.Metropark.redis.RedisStateService;
 

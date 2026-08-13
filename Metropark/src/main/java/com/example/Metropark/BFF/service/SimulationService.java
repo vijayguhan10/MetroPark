@@ -34,7 +34,7 @@ import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.parking.service.ParkingLifecycleService;
 import com.example.Metropark.parking.service.ParkingSessionService;
 import com.example.Metropark.parking.service.ParkingSlotService;
-import com.example.Metropark.payments.repo.PaymentMethodRepository;
+import com.example.Metropark.payments.payment.repo.PaymentMethodRepository;
 import com.example.Metropark.reservation.service.ReservationClassService;
 import com.example.Metropark.user.dto.UserDto;
 import com.example.Metropark.user.repo.UserRepository;
@@ -144,7 +144,6 @@ public class SimulationService {
                 this.reservationClassService = reservationClassService;
         }
 
-
         public Mono<SimulationRunResponseDto> startSimulation() {
                 return Mono.defer(() -> {
                         if (!simulationRunning.compareAndSet(false, true)) {
@@ -246,7 +245,6 @@ public class SimulationService {
                                                 () -> LOGGER.info("{} loop completed", name));
         }
 
-
         private Mono<Void> entryTick(SimulationRunContext context) {
                 if (!simulationRunning.get()) {
                         return Mono.empty();
@@ -273,23 +271,23 @@ public class SimulationService {
                 UserDto user = freeUser.get();
 
                 return resolveVehicle(user.userId())
-                        .switchIfEmpty(Mono.defer(() -> {
-                                releaseSlot(slotId);
-                                userActiveSession.remove(user.userId());
-                                emitEvent(context, "VEHICLE_UNAVAILABLE",
-                                                "Could not resolve a vehicle for user " + user.userId(), null);
-                                return Mono.empty();
-                        }))
-                        .flatMap(vehicle -> reportEntry(context, user, vehicle, slotId))
-                        .onErrorResume(error -> {
-                                releaseSlot(slotId);
-                                userActiveSession.remove(user.userId());
-                                LOGGER.error("Entry observation failed for user {} on slot {}",
-                                                user.userId(), slotId, error);
-                                emitEvent(context, "VEHICLE_ENTRY_FAILED", error.getMessage(), null);
-                                return Mono.empty();
-                        })
-                        .then();
+                                .switchIfEmpty(Mono.defer(() -> {
+                                        releaseSlot(slotId);
+                                        userActiveSession.remove(user.userId());
+                                        emitEvent(context, "VEHICLE_UNAVAILABLE",
+                                                        "Could not resolve a vehicle for user " + user.userId(), null);
+                                        return Mono.empty();
+                                }))
+                                .flatMap(vehicle -> reportEntry(context, user, vehicle, slotId))
+                                .onErrorResume(error -> {
+                                        releaseSlot(slotId);
+                                        userActiveSession.remove(user.userId());
+                                        LOGGER.error("Entry observation failed for user {} on slot {}",
+                                                        user.userId(), slotId, error);
+                                        emitEvent(context, "VEHICLE_ENTRY_FAILED", error.getMessage(), null);
+                                        return Mono.empty();
+                                })
+                                .then();
         }
 
         private Mono<CameraEvent> reportEntry(
@@ -423,7 +421,8 @@ public class SimulationService {
 
                 return vehicleService.registerVehicle(vehicle)
                                 .then(vehicleService.getVehiclesByUserId(userId)
-                                                .filter(registered -> plate.equalsIgnoreCase(registered.vehicleNumber()))
+                                                .filter(registered -> plate
+                                                                .equalsIgnoreCase(registered.vehicleNumber()))
                                                 .next()
                                                 .map(registered -> new SimulatedVehicle(
                                                                 registered.vehicleId(), registered.vehicleNumber())));
@@ -443,7 +442,6 @@ public class SimulationService {
                         }
                 }
         }
-
 
         private Mono<Void> exitTick(SimulationRunContext context) {
                 if (!simulationRunning.get()) {
@@ -513,7 +511,6 @@ public class SimulationService {
                 vehiclesInside.put(seen.vehicleId(), seen);
                 emitEvent(context, "CAMERA_EXIT_FAILED", error.getMessage(), null);
         }
-
 
         private void resetSimulationState() {
                 vehiclesInside.clear();
@@ -718,7 +715,6 @@ public class SimulationService {
                 }
                 return highest;
         }
-
 
         private SimulationRunResponseDto buildRunResponse(String status, SimulationRunContext context) {
                 String loopState = simulationRunning.get() ? "RUNNING" : "STOPPED";

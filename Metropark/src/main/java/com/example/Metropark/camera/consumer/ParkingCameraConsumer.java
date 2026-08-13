@@ -18,7 +18,7 @@ import com.example.Metropark.camera.event.CameraEventStatus;
 import com.example.Metropark.camera.repo.CameraEventRepository;
 import com.example.Metropark.config.RabbitMQConfig;
 import com.example.Metropark.parking.service.ParkingLifecycleService;
-import com.example.Metropark.payments.repo.PaymentMethodRepository;
+import com.example.Metropark.payments.payment.repo.PaymentMethodRepository;
 import com.example.Metropark.redis.DistributedLockService;
 import com.example.Metropark.vehicle.repo.VehicleRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;

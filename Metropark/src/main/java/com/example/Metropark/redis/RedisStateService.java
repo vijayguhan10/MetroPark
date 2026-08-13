@@ -17,7 +17,7 @@ import com.example.Metropark.event.payload.SessionEventPayload;
 import com.example.Metropark.event.payload.SlotEventPayload;
 import com.example.Metropark.parking.dto.ParkingSessionDto;
 import com.example.Metropark.parking.dto.ParkingSlotDto;
-import com.example.Metropark.payments.dto.PaymentDto;
+import com.example.Metropark.payments.payment.dto.PaymentDto;
 import com.example.Metropark.reservation.dto.ReservationDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -52,7 +52,6 @@ public class RedisStateService {
                 this.valueOps = redisTemplate.opsForValue();
                 this.objectMapper = objectMapper;
         }
-
 
         public Mono<Void> saveSlot(ParkingSlotDto slot, long version) {
                 String key = SLOT_PREFIX + slot.slotId();
@@ -150,7 +149,6 @@ public class RedisStateService {
                                 .doOnError(e -> LOGGER.error("Error getting all slots from Redis", e));
         }
 
-
         public Mono<Void> saveReservation(ReservationDto reservation, long version) {
                 String key = RESERVATION_PREFIX + reservation.reservationId();
                 String versionKey = VERSION_PREFIX + "reservation:" + reservation.reservationId();
@@ -236,7 +234,6 @@ public class RedisStateService {
                                 .flatMap(key -> valueOps.get(key).map(this::toReservationEventPayload))
                                 .doOnError(e -> LOGGER.error("Error getting all reservations from Redis", e));
         }
-
 
         public Mono<Void> saveSession(ParkingSessionDto session, long version) {
                 String key = SESSION_PREFIX + session.sessionId();
@@ -363,7 +360,6 @@ public class RedisStateService {
                                 .doOnError(e -> LOGGER.error("Error checking active session for vehicle {} in Redis",
                                                 vehicleId, e));
         }
-
 
         public Mono<Void> savePayment(PaymentDto payment, long version) {
                 String key = PAYMENT_PREFIX + payment.paymentId();
@@ -514,7 +510,6 @@ public class RedisStateService {
                 return objectMapper.convertValue(value, PaymentEventPayload.class);
         }
 
-
         public Mono<Void> updateOccupancy(String locationId, int totalSlots, int occupiedSlots) {
                 String key = OCCUPANCY_PREFIX + locationId;
                 Map<String, Object> occupancy = Map.of(
@@ -548,7 +543,6 @@ public class RedisStateService {
                                 .doOnError(e -> LOGGER.error("Error getting all occupancies from Redis", e));
         }
 
-
         public Mono<Void> saveCameraEvent(CameraEventPayload event) {
                 return redisTemplate.opsForList()
                                 .rightPush(CAMERA_EVENTS_KEY, event)
@@ -564,7 +558,6 @@ public class RedisStateService {
                                 .map(this::toCameraEventPayload)
                                 .doOnError(e -> LOGGER.error("Error getting recent camera events from Redis", e));
         }
-
 
         public Mono<Long> incrementVersion(String entityType, String entityId) {
                 String versionKey = VERSION_PREFIX + entityType + ":" + entityId;
