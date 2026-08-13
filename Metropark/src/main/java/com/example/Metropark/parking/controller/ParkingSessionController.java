@@ -102,28 +102,23 @@ public class ParkingSessionController {
             return Mono.error(new IllegalArgumentException("fromDate must be before toDate"));
         }
 
-        // Validate vehicleId exists
         return vehicleService.getVehicleById(request.vehicleId())
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Vehicle not found: " + request.vehicleId())))
                 .then(
-                        // Validate userId exists
                         userRepository.findById(request.userId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found: " + request.userId())))
                 )
                 .then(
-                        // Validate locationId exists
                         locationRepository.findById(request.locationId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Location not found: " + request.locationId())))
                 )
                 .then(
-                        // Validate slotId exists and belongs to location
                         parkingSlotRepository.findById(request.slotId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Slot not found: " + request.slotId())))
                                 .filter(slot -> request.locationId().equals(slot.locationId()))
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Slot does not belong to location")))
                 )
                 .then(
-                        // Validate slot availability
                         parkingSlotService.isSlotAvailable(request.slotId())
                                 .filter(available -> available)
                                 .switchIfEmpty(Mono.error(new IllegalStateException("Slot is not available: " + request.slotId())))
@@ -132,7 +127,6 @@ public class ParkingSessionController {
     }
 
     private Mono<Void> publishVehicleEntryEvent(ParkingSessionRequestDto request) {
-        // Get vehicle to obtain license plate
         return vehicleService.getVehicleById(request.vehicleId())
                 .flatMap(vehicle -> {
                     String licensePlate = vehicle.vehicleNumber();

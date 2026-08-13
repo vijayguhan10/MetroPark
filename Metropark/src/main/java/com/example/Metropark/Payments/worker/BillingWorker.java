@@ -95,7 +95,6 @@ public class BillingWorker {
 
         loadSession(sessionId)
                 .flatMap(session -> {
-                    // Idempotency check: if payment status is already PAID, SUCCESS, or FAILED, ignore
                     if ("PAID".equalsIgnoreCase(session.paymentStatus())
                             || "SUCCESS".equalsIgnoreCase(session.paymentStatus())
                             || "FAILED".equalsIgnoreCase(session.paymentStatus())) {
@@ -120,10 +119,8 @@ public class BillingWorker {
                                 return walletRepository.deductFund(userId, amount)
                                         .flatMap(rowsAffected -> {
                                             if (rowsAffected > 0) {
-                                                // PAYMENT SUCCESS
                                                 return handlePaymentSuccess(session, amount, durationMinutes, userId, payload.vehicleId());
                                             } else {
-                                                // PAYMENT FAILED (INSUFFICIENT FUNDS)
                                                 return handlePaymentFailure(session, amount, durationMinutes, userId, payload.vehicleId());
                                             }
                                         });
@@ -190,10 +187,6 @@ public class BillingWorker {
                             paymentId, txnRef, sessionId, userId, 1, amount, "INR", "FAILED",
                             "402", "Insufficient funds", now, now, now);
 
-                    // 1. Record payment as FAILED
-                    // 2. Mark session payment_status = FAILED and session_status = SUSPENDED
-                    // 3. Mark user.status = SUSPENDED in users table
-                    // 4. Insert record into user_suspensions table
                     SuspensionDto suspensionDto = new SuspensionDto(
                             null, userId, "Payment failed due to insufficient funds",
                             now, null, true, "SYSTEM");

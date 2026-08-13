@@ -66,7 +66,6 @@ public class EventPublisher {
                                 version,
                                 payload);
 
-                // Also emit to SSE sink for real-time streaming
                 parkingEventSink.emit(event);
 
                 return publish(
@@ -85,7 +84,6 @@ public class EventPublisher {
                                 version,
                                 payload);
 
-                // Also emit to SSE sink for real-time streaming
                 parkingEventSink.emit(event);
 
                 return publish(

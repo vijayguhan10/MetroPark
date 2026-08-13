@@ -18,11 +18,6 @@ public class WalletRepository {
         this.dsl = dsl;
     }
 
-    /**
-     * Atomically deduct amount from user's wallet fund.
-     * SQL: UPDATE wallet_fund SET fund = fund - :amount WHERE user_id = :userId AND fund >= :amount;
-     * Returns 1 if deduction succeeded, 0 if failed (insufficient funds or user not found).
-     */
     public Mono<Integer> deductFund(String userId, BigDecimal amount) {
         return Mono.from(
             dsl.update(table("wallet_fund"))

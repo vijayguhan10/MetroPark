@@ -6,12 +6,6 @@ import io.micrometer.core.instrument.Timer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Custom business metrics for the MetroPark application.
- *
- * <p>These are exported to Prometheus through {@code /actuator/prometheus} and
- * drive the "MetroPark Overview" Grafana dashboard.
- */
 @Configuration
 public class MetricsConfig {
 
@@ -21,16 +15,6 @@ public class MetricsConfig {
         this.meterRegistry = meterRegistry;
     }
 
-    /**
-     * Custom counter for parking session events.
-     *
-     * <p>Named "opened" rather than "created": the Prometheus client treats
-     * {@code _created} as a reserved suffix and strips it, so a meter called
-     * {@code metropark.parking.session.created} would be published as
-     * {@code metropark_parking_session_total} — which reads as a total count of
-     * sessions rather than a count of creations. The same applies to
-     * {@link #reservationBookedCounter()} and {@link #slotRegisteredCounter()}.
-     */
     @Bean
     public Counter parkingSessionCreatedCounter() {
         return Counter.builder("metropark.parking.session.opened")
@@ -55,9 +39,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom counter for reservation events.
-     */
     @Bean
     public Counter reservationBookedCounter() {
         return Counter.builder("metropark.reservation.booked")
@@ -74,9 +55,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom counter for slot events.
-     */
     @Bean
     public Counter slotRegisteredCounter() {
         return Counter.builder("metropark.slot.registered")
@@ -93,9 +71,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom counter for payment events.
-     */
     @Bean
     public Counter paymentCompletedCounter() {
         return Counter.builder("metropark.payment.completed")
@@ -112,9 +87,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom timer for database operations.
-     */
     @Bean
     public Timer databaseOperationTimer() {
         return Timer.builder("metropark.db.operation.duration")
@@ -123,9 +95,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom timer for RabbitMQ publish operations.
-     */
     @Bean
     public Timer rabbitmqPublishTimer() {
         return Timer.builder("metropark.rabbitmq.publish.duration")
@@ -134,9 +103,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom timer for Redis operations.
-     */
     @Bean
     public Timer redisOperationTimer() {
         return Timer.builder("metropark.redis.operation.duration")
@@ -145,9 +111,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom counter for camera events.
-     */
     @Bean
     public Counter cameraCarEnteredCounter() {
         return Counter.builder("metropark.camera.car.entered")
@@ -164,9 +127,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom counter for simulation events.
-     */
     @Bean
     public Counter simulationEntryCounter() {
         return Counter.builder("metropark.simulation.entry")
@@ -183,9 +143,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom gauge for active parking sessions.
-     */
     @Bean
     public io.micrometer.core.instrument.Gauge activeSessionsGauge() {
         return io.micrometer.core.instrument.Gauge
@@ -195,9 +152,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom gauge for available parking slots.
-     */
     @Bean
     public io.micrometer.core.instrument.Gauge availableSlotsGauge() {
         return io.micrometer.core.instrument.Gauge
@@ -207,9 +161,6 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    /**
-     * Custom gauge for active reservations.
-     */
     @Bean
     public io.micrometer.core.instrument.Gauge activeReservationsGauge() {
         return io.micrometer.core.instrument.Gauge
@@ -219,20 +170,15 @@ public class MetricsConfig {
                 .register(meterRegistry);
     }
 
-    // These methods would be implemented with actual service calls
-    // For now, they return 0 as placeholders
     private double getActiveSessionsCount() {
-        // TODO: Implement with actual service call
         return 0;
     }
 
     private double getAvailableSlotsCount() {
-        // TODO: Implement with actual service call
         return 0;
     }
 
     private double getActiveReservationsCount() {
-        // TODO: Implement with actual service call
         return 0;
     }
 }

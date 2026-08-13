@@ -18,10 +18,6 @@ public class ParkingPricingRepository {
         this.dsl = dsl;
     }
 
-    /**
-     * Retrieves base_rate_per_hour from parking_pricing table in PostgreSQL.
-     * Falls back to 4.00 if no record exists yet.
-     */
     public Mono<BigDecimal> getBaseRatePerHour() {
         return Mono.from(
             dsl.select(field("base_rate_per_hour"))

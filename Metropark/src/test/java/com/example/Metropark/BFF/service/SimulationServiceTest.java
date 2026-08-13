@@ -43,18 +43,8 @@ import com.example.Metropark.vehicle.service.VehicleTypeService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-/**
- * Covers the lifecycle guarantees the simulation is specified to hold: one
- * vehicle per tick at most, idle rather than stopped when there is nothing to
- * do, and a loop that survives failing ticks.
- *
- * <p>
- * These tests run against the real 500ms / 2s intervals, so they wait in real
- * time and assert on ranges rather than exact counts.
- */
 class SimulationServiceTest {
 
-        /** Entry ticks every 500ms; a 2.2s window gives 4 of them, plus slack. */
         private static final Duration OBSERVATION_WINDOW = Duration.ofMillis(2200);
 
         private VehicleService vehicleService;
@@ -71,11 +61,6 @@ class SimulationServiceTest {
 
         private SimulationService service;
 
-        /**
-         * Camera events the simulator published, split by direction. These replace the
-         * old "parked / exited" queues: the simulator no longer parks anything, so
-         * what it publishes is the only observable behaviour it has.
-         */
         private final ConcurrentLinkedQueue<CameraEvent> entered = new ConcurrentLinkedQueue<>();
         private final ConcurrentLinkedQueue<CameraEvent> exited = new ConcurrentLinkedQueue<>();
 
@@ -112,10 +97,6 @@ class SimulationServiceTest {
                 service.stopSimulation().block();
         }
 
-        /**
-         * Reference data with {@code slotCount} slots and {@code userCount} users, all
-         * slots free and no pre-existing sessions.
-         */
         private void givenReferenceData(int slotCount, int userCount) {
                 when(locationRepository.findAll())
                                 .thenReturn(Flux.just(new LocationDto("LOC-001", 1, "Central", "Chennai", "ACTIVE")));
@@ -142,7 +123,6 @@ class SimulationServiceTest {
                                 .toList();
                 when(parkingSlotRepository.findAll()).thenReturn(Flux.fromIterable(slots));
 
-                // Every user already owns a vehicle, so entry never has to register one.
                 when(vehicleService.getVehiclesByUserId(anyString())).thenAnswer(invocation -> {
                         String userId = invocation.getArgument(0);
                         int index = Integer.parseInt(userId.substring(4));
@@ -150,15 +130,9 @@ class SimulationServiceTest {
                                         1, "Car", "Tata", "Nexon", "White", true, null, null));
                 });
 
-                // The lot already has enough slots, so none are created.
                 when(parkingSlotService.createSlots(any())).thenReturn(Mono.just(0));
         }
 
-        /**
-         * Every camera event publishes cleanly, and is filed by direction. The
-         * simulator's whole contract is now "an observation went out", so this is the
-         * only seam the tests need.
-         */
         private void givenCameraPublishSucceeds() {
                 when(cameraEventPublisher.recordAndPublish(any(CameraEvent.class))).thenAnswer(invocation -> {
                         CameraEvent event = invocation.getArgument(0);
@@ -171,7 +145,6 @@ class SimulationServiceTest {
                 });
         }
 
-        /** Every publish fails, as a broker outage would. */
         private void givenCameraPublishFails(AtomicInteger attempts) {
                 when(cameraEventPublisher.recordAndPublish(any(CameraEvent.class))).thenAnswer(invocation -> {
                         attempts.incrementAndGet();
@@ -194,15 +167,12 @@ class SimulationServiceTest {
 
         @Test
         void entryLoopParksOneVehiclePerTickAndStopsAtCapacity() throws Exception {
-                // One slot, many users: capacity, not user supply, is the binding limit.
                 givenReferenceData(1, 10);
                 givenCameraPublishSucceeds();
 
                 service.startSimulation().block();
                 Thread.sleep(OBSERVATION_WINDOW.toMillis());
 
-                // Over ~4 entry ticks only the single slot can ever be filled, and the
-                // exit loop (every 2s) frees it at most once in the window.
                 assertTrue(entered.size() >= 1, "the free slot should have been filled");
                 assertTrue(entered.size() <= 3,
                                 "at most one vehicle per tick, bounded by the single slot; got " + entered.size());
@@ -232,11 +202,6 @@ class SimulationServiceTest {
                 assertTrue(service.isRunning(), "the loop must idle, not finish, when no user is free");
         }
 
-        /**
-         * The guarantee that matters most: a tick that throws must not end the loop.
-         * If it did, one transient Redis or RabbitMQ blip would silently kill the
-         * simulation for the rest of the application's life.
-         */
         @Test
         void loopSurvivesTicksThatFail() throws Exception {
                 givenReferenceData(5, 10);
@@ -252,10 +217,6 @@ class SimulationServiceTest {
                 assertTrue(service.isRunning(), "a failing tick must not stop the simulation");
         }
 
-        /**
-         * A failed entry has to give its slot and its user back, otherwise every
-         * failure permanently shrinks the lot and the simulation starves.
-         */
         @Test
         void failedEntryReleasesTheClaimedSlotAndUser() throws Exception {
                 givenReferenceData(1, 1);
@@ -266,8 +227,6 @@ class SimulationServiceTest {
                 service.startSimulation().block();
                 Thread.sleep(OBSERVATION_WINDOW.toMillis());
 
-                // With a single slot and a single user, a second attempt is only
-                // possible if the first failure released both.
                 assertTrue(attempts.get() >= 2,
                                 "slot and user must be released after a failed entry; attempts=" + attempts.get());
         }

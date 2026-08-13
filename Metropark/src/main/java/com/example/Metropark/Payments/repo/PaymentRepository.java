@@ -23,10 +23,6 @@ public class PaymentRepository {
         this.dsl = dsl;
     }
 
-    /**
-     * Reserves the payment primary key from the PostgreSQL identity sequence without
-     * inserting a row, so Redis can hold the payment before the consumer persists it.
-     */
     public Mono<Long> allocatePaymentId() {
         return Mono.from(dsl.select(
                 field("nextval(pg_get_serial_sequence('payments', 'payment_id'))", Long.class)))
@@ -51,8 +47,6 @@ public class PaymentRepository {
                             dto.gatewayResponseCode(), dto.gatewayResponseMessage(), dto.processedAt(),
                             dto.createdAt(), dto.updatedAt())
                     .returning(field("payment_id")))
-                    // map() has to be applied to the Mono, not to the jOOQ
-                    // InsertResultStep - the latter has no such method and does not compile.
                     .map(record -> record.get(field("payment_id"), Integer.class));
         }
 
@@ -109,13 +103,6 @@ public class PaymentRepository {
                 .defaultIfEmpty(0);
     }
 
-    /**
-     * Persists the status decided at the Redis stage, keyed on the primary key only.
-     * The consumer is applying an already-validated transition, so re-checking the
-     * previous status here would reject legitimate redeliveries; a zero row count
-     * means the payment row genuinely does not exist and the message must be dead
-     * lettered rather than silently dropped.
-     */
     public Mono<Integer> updateStatusById(
             Long id,
             String newStatus,

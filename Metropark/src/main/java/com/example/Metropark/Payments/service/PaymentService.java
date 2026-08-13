@@ -56,7 +56,6 @@ public class PaymentService {
                 this.redisStateService = redisStateService;
         }
 
-        // No @Transactional: Redis and RabbitMQ only; the consumer persists the row.
         public Mono<Integer> createPayment(PaymentDto dto) {
                 LOGGER.info("Creating payment: {}", dto);
                 PaymentDto cleanDto = normalize(dto, null);
@@ -160,7 +159,6 @@ public class PaymentService {
 
         public Flux<PaymentDto> getAllPayments() {
                 LOGGER.debug("Fetching all payments");
-                // Try Redis first, fallback to DB
                 return redisStateService.getAllPayments()
                                 .map(this::toPaymentDto)
                                 .switchIfEmpty(paymentRepository.findAll())
@@ -170,7 +168,6 @@ public class PaymentService {
 
         public Mono<PaymentDto> getPaymentById(Long id) {
                 LOGGER.debug("Fetching payment by id: {}", id);
-                // Try Redis first, fallback to DB
                 return redisStateService.getPayment(id)
                                 .map(this::toPaymentDto)
                                 .switchIfEmpty(paymentRepository.findById(id))
@@ -200,7 +197,6 @@ public class PaymentService {
                                                                 sessionId, e.getMessage()));
         }
 
-        // No @Transactional: Redis and RabbitMQ only; the consumer persists the change.
         public Mono<Integer> updatePaymentStatus(Long id, PaymentStatusUpdateDto dto) {
                 if (dto.status() == null || dto.status().isBlank()) {
                         return Mono.error(new IllegalArgumentException("Payment status is required."));
@@ -220,9 +216,6 @@ public class PaymentService {
                                         "changedBy must be USER, SYSTEM, GATEWAY, or ADMIN."));
                 }
 
-                // The current status is read from Redis, the real-time store: a payment
-                // created moments ago may not be in PostgreSQL yet, and validating the
-                // transition against a stale row would reject a legitimate PENDING -> PAID.
                 return redisStateService.getPayment(id)
                                 .switchIfEmpty(paymentRepository.findById(id).map(this::toPaymentEventPayload))
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Payment not found.")))
@@ -263,7 +256,6 @@ public class PaymentService {
                                                 e.getMessage()));
         }
 
-        /** First version assigned to a payment. */
         private static final long INITIAL_VERSION = 1L;
 
         private Mono<Void> validateTransition(String currentStatus, String nextStatus) {
@@ -303,10 +295,6 @@ public class PaymentService {
                                 ? null
                                 : dto.transactionReference().trim();
 
-                // if (normalizedReference == null) {
-                // throw new IllegalArgumentException("Transaction reference is required for
-                // non-cash payments.");
-                // }
 
                 LocalDateTime now = LocalDateTime.now();
                 LocalDateTime processedAt = dto.processedAt();
@@ -346,11 +334,6 @@ public class PaymentService {
                                 LocalDateTime.now());
         }
 
-        // Removed: toPaymentEventPayload(paymentId, status). Same defect as the session
-        // variant - publishing an all-null payload caused the consumer to overwrite the
-        // cached payment with nulls, losing sessionId, amount and userId. Status
-        // changes
-        // now publish the payload Redis returned.
 
         private PaymentDto toPaymentDto(PaymentEventPayload payload) {
                 return new PaymentDto(

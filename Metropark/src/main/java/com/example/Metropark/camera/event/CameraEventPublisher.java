@@ -10,23 +10,6 @@ import com.example.Metropark.config.RabbitMQConfig;
 
 import reactor.core.publisher.Mono;
 
-/**
- * Makes a camera observation durable, then announces it.
- *
- * <p>
- * The order is the contract, which is why persisting and publishing live behind
- * one method instead of being left to each caller: a row written first and never
- * published is a visible RECEIVED event an operator can replay, whereas an event
- * published first and never written is a car that parked with no record of what
- * let it in. Callers that did their own sequencing would eventually get it
- * backwards.
- *
- * <p>
- * The event is published as-is rather than wrapped in
- * {@link com.example.Metropark.event.Event}: {@link CameraEvent} already carries
- * its own id, type and timestamp, so wrapping would duplicate all three and give
- * consumers two ids to disagree about.
- */
 @Service
 public class CameraEventPublisher {
 

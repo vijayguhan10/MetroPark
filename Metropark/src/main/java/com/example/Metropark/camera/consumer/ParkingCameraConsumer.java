@@ -26,25 +26,6 @@ import com.rabbitmq.client.Channel;
 
 import reactor.core.publisher.Mono;
 
-/**
- * Turns a camera observation into a parking operation.
- *
- * <p>
- * This is the ONLY thing that starts a park or an exit. Nothing calls
- * {@link ParkingLifecycleService} on the producing side any more, so a car is
- * parked because a camera saw it and the broker delivered that fact - not
- * because a scheduler decided to.
- *
- * <p>
- * All parking logic stays in {@link ParkingLifecycleService}. This class only
- * resolves what the camera could not know (which vehicle, which slot, which
- * session) and enforces exactly-once per plate.
- *
- * <p>
- * Acknowledgement follows the same contract as
- * {@link com.example.Metropark.event.consumer.EventConsumer}: the factory is
- * MANUAL, so every delivery settles here, after the reactive work finishes.
- */
 @Component
 public class ParkingCameraConsumer {
 
@@ -87,15 +68,9 @@ public class ParkingCameraConsumer {
             return;
         }
 
-        // The lock is per PLATE, not per event: the duplicate we are guarding
-        // against is the same car read twice with two different event ids, which
-        // an event-id check would sail straight past.
         lockService.acquirePlateLock(event.licensePlate())
                 .flatMap(lock -> apply(event)
                         .doFinally(signal -> lockService.release(lock).subscribe()))
-                // Empty means the lock was held: another delivery is mid-flight for
-                // this plate. Ack it - it is a duplicate observation, which is
-                // normal for ANPR, not a failure to retry or dead letter.
                 .switchIfEmpty(Mono.fromRunnable(() -> LOGGER.debug(
                         "Ignoring duplicate camera event {} for plate {}: already in flight",
                         event.eventId(), event.licensePlate())))
@@ -105,9 +80,6 @@ public class ParkingCameraConsumer {
                         error -> {
                             LOGGER.error("Camera event {} ({}) failed for plate {}",
                                     event.eventId(), event.eventType(), event.licensePlate(), error);
-                            // Recorded before the nack so the audit row explains the dead
-                            // letter. Best effort: if the audit write itself fails the
-                            // message must still be dead lettered, never left unsettled.
                             cameraEventRepository
                                     .updateStatus(event.eventId(), CameraEventStatus.FAILED, error.getMessage())
                                     .onErrorResume(auditError -> {
@@ -130,11 +102,6 @@ public class ParkingCameraConsumer {
                                 .subscribe());
     }
 
-    /**
-     * Resolves the plate to a registered vehicle, then hands off. An unknown plate
-     * is a real failure: a car the system cannot identify entered or left, and that
-     * belongs in the dead letter queue rather than being silently dropped.
-     */
     private Mono<Void> apply(CameraEvent event) {
         return vehicleRepository.findByVehicleNumber(event.licensePlate())
                 .switchIfEmpty(Mono.error(new IllegalStateException(
@@ -145,9 +112,6 @@ public class ParkingCameraConsumer {
     }
 
     private Mono<Void> park(CameraEvent event, Integer vehicleId, String ownerUserId) {
-        // The vehicle's registered owner wins over the userId the event carries:
-        // the event's copy is whatever the producer believed, while the vehicle
-        // row is what the database will enforce.
         String userId = ownerUserId != null ? ownerUserId : event.userId();
 
         return activePaymentMethodIds()

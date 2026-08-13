@@ -7,18 +7,6 @@ import java.util.UUID;
 
 import org.jooq.Record;
 
-/**
- * Translates between the wire form of a camera event and its
- * {@code camera_events} row.
- *
- * <p>
- * The one thing worth stating: {@link CameraEvent#timestamp()} is an
- * {@link Instant} while {@code event_timestamp} is {@code timestamp without time
- * zone}, so every crossing goes through the system zone - the same zone every
- * {@code LocalDateTime.now()} elsewhere in this codebase already uses. Binding
- * an Instant straight at the column would silently store UTC and put camera
- * events an offset apart from the sessions they create.
- */
 public final class CameraEventMapper {
 
     private CameraEventMapper() {

@@ -23,7 +23,6 @@ public class ParkingLifecycleEventService {
     }
 
     private ParkingLifecycleEventDto convertToDto(Event event) {
-        // The payload is a ParkingLifecycleEventPayload record, Jackson will serialize it properly
         return new ParkingLifecycleEventDto(
                 event.eventId(),
                 event.type(),
