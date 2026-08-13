@@ -14,6 +14,7 @@ import com.example.Metropark.parking.repo.ParkingSessionRepository;
 import com.example.Metropark.payments.payment.dto.PaymentDto;
 import com.example.Metropark.payments.payment.dto.PaymentStatusUpdateDto;
 import com.example.Metropark.payments.payment.repo.PaymentRepository;
+import com.example.Metropark.payments.wallet.service.WalletService;
 import com.example.Metropark.redis.RedisStateService;
 
 import reactor.core.publisher.Flux;
@@ -38,20 +39,20 @@ public class PaymentService {
 
         private final PaymentRepository paymentRepository;
         private final PaymentAuditLogger auditLogger;
-        private final PaymentMethodService paymentMethodService;
+        private final WalletService walletService;
         private final ParkingSessionRepository sessionRepository;
         private final RedisStateService redisStateService;
 
         public PaymentService(
                         PaymentRepository paymentRepository,
                         PaymentAuditLogger auditLogger,
-                        PaymentMethodService paymentMethodService,
+                        WalletService walletService,
                         ParkingSessionRepository sessionRepository,
                         RedisStateService redisStateService) {
 
                 this.paymentRepository = paymentRepository;
                 this.auditLogger = auditLogger;
-                this.paymentMethodService = paymentMethodService;
+                this.walletService = walletService;
                 this.sessionRepository = sessionRepository;
                 this.redisStateService = redisStateService;
         }
@@ -75,11 +76,9 @@ public class PaymentService {
                                                                                 "Transaction reference already exists."))
                                                                 : Mono.empty());
 
-                Mono<Void> methodValidation = paymentMethodService.requireActiveMethod(cleanDto.methodId());
                 return Mono.when(
                                 sessionValidation,
-                                referenceValidation,
-                                methodValidation)
+                                referenceValidation)
                                 .then(
                                                 Mono.defer(() -> {
 
@@ -102,7 +101,6 @@ public class PaymentService {
                                                                                                 cleanDto.transactionReference(),
                                                                                                 cleanDto.sessionId(),
                                                                                                 session.userId(),
-                                                                                                cleanDto.methodId(),
                                                                                                 cleanDto.amount(),
                                                                                                 cleanDto.currency(),
                                                                                                 cleanDto.paymentStatus(),
@@ -112,47 +110,56 @@ public class PaymentService {
                                                                                                 cleanDto.createdAt(),
                                                                                                 cleanDto.updatedAt());
 
-                                                                                return paymentRepository
-                                                                                                .allocatePaymentId()
-                                                                                                .flatMap(paymentId -> {
+                                                                                // Deduct the payment amount from the
+                                                                                // user's wallet as part of the payment
+                                                                                // transaction. If the wallet has
+                                                                                // insufficient funds the whole payment
+                                                                                // creation fails atomically.
+                                                                                return walletService
+                                                                                                .deductFund(
+                                                                                                                session.userId(),
+                                                                                                                dtoWithUserId.amount())
+                                                                                                .then(paymentRepository
+                                                                                                                .allocatePaymentId()
+                                                                                                                .flatMap(paymentId -> {
 
-                                                                                                        long version = INITIAL_VERSION;
+                                                                                                                        long version = INITIAL_VERSION;
 
-                                                                                                        PaymentEventPayload payload = new PaymentEventPayload(
-                                                                                                                        paymentId,
-                                                                                                                        dtoWithUserId.transactionReference(),
-                                                                                                                        dtoWithUserId.sessionId(),
-                                                                                                                        dtoWithUserId.userId(),
-                                                                                                                        dtoWithUserId.methodId(),
-                                                                                                                        dtoWithUserId.amount(),
-                                                                                                                        dtoWithUserId.currency(),
-                                                                                                                        dtoWithUserId.paymentStatus(),
-                                                                                                                        dtoWithUserId.gatewayResponseCode(),
-                                                                                                                        dtoWithUserId.gatewayResponseMessage(),
-                                                                                                                        dtoWithUserId.processedAt(),
-                                                                                                                        LocalDateTime.now());
+                                                                                                                        PaymentEventPayload payload = new PaymentEventPayload(
+                                                                                                                                        paymentId,
+                                                                                                                                        dtoWithUserId.transactionReference(),
+                                                                                                                                        dtoWithUserId.sessionId(),
+                                                                                                                                        dtoWithUserId.userId(),
+                                                                                                                                        dtoWithUserId.amount(),
+                                                                                                                                        dtoWithUserId.currency(),
+                                                                                                                                        dtoWithUserId.paymentStatus(),
+                                                                                                                                        dtoWithUserId.gatewayResponseCode(),
+                                                                                                                                        dtoWithUserId.gatewayResponseMessage(),
+                                                                                                                                        dtoWithUserId.processedAt(),
+                                                                                                                                        LocalDateTime.now());
 
-                                                                                                        return redisStateService
-                                                                                                                        .savePaymentState(
-                                                                                                                                        payload,
-                                                                                                                                        version)
-                                                                                                                        .thenReturn(
-                                                                                                                                        paymentId.intValue());
-                                                                                                })
-                                                                                                .doOnSuccess(paymentId -> {
+                                                                                                                        return redisStateService
+                                                                                                                                        .savePaymentState(
+                                                                                                                                                        payload,
+                                                                                                                                                        version)
+                                                                                                                                        .thenReturn(
+                                                                                                                                                        paymentId.intValue());
+                                                                                                                })
+                                                                                                                .doOnSuccess(paymentId -> {
 
-                                                                                                        LOGGER.info(
-                                                                                                                        "Payment {} written to Redis and published for persistence",
-                                                                                                                        paymentId);
+                                                                                                                        LOGGER.info(
+                                                                                                                                        "Payment {} written to Redis and published for persistence; wallet deducted for user {}",
+                                                                                                                                        paymentId,
+                                                                                                                                        session.userId());
 
-                                                                                                        auditLogger.logPaymentCreated(
-                                                                                                                        dtoWithUserId,
-                                                                                                                        paymentId);
-                                                                                                })
-                                                                                                .doOnError(e -> LOGGER
-                                                                                                                .error(
-                                                                                                                                "Error creating payment: {}",
-                                                                                                                                e.getMessage()));
+                                                                                                                        auditLogger.logPaymentCreated(
+                                                                                                                                        dtoWithUserId,
+                                                                                                                                        paymentId);
+                                                                                                                })
+                                                                                                                .doOnError(e -> LOGGER
+                                                                                                                                .error(
+                                                                                                                                                "Error creating payment: {}",
+                                                                                                                                                e.getMessage())));
                                                                         });
                                                 }));
         }
@@ -274,9 +281,6 @@ public class PaymentService {
         }
 
         private PaymentDto normalize(PaymentDto dto, Long id) {
-                if (dto.methodId() == null) {
-                        throw new IllegalArgumentException("Payment method ID is required.");
-                }
                 if (dto.amount().compareTo(BigDecimal.ZERO) <= 0) {
                         throw new IllegalArgumentException("Amount must be greater than zero.");
                 }
@@ -306,7 +310,6 @@ public class PaymentService {
                                 normalizedReference,
                                 dto.sessionId(),
                                 dto.userId(),
-                                dto.methodId(),
                                 dto.amount(),
                                 dto.currency().trim().toUpperCase(),
                                 status,
@@ -323,7 +326,6 @@ public class PaymentService {
                                 dto.transactionReference(),
                                 dto.sessionId(),
                                 dto.userId(),
-                                dto.methodId(),
                                 dto.amount(),
                                 dto.currency(),
                                 dto.paymentStatus(),
@@ -339,7 +341,6 @@ public class PaymentService {
                                 payload.transactionReference(),
                                 payload.sessionId(),
                                 payload.userId(),
-                                payload.methodId(),
                                 payload.amount(),
                                 payload.currency(),
                                 payload.paymentStatus(),

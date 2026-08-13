@@ -72,12 +72,26 @@ public class ParkingLifecycleRepository {
                                                         session.expectedExitTime(),
                                                         session.durationMinutes(),
                                                         session.paymentStatus(),
-                                                        session.surgeMultiplier() != null ? session.surgeMultiplier() : java.math.BigDecimal.ONE,
+                                                        session.surgeMultiplier() != null ? session.surgeMultiplier()
+                                                                        : java.math.BigDecimal.ONE,
                                                         session.sessionVersion(),
                                                         session.updatedAt(),
                                                         session.updatedAt())
                                         .onConflict(field("session_id")).doNothing())
                                         .defaultIfEmpty(0)
+                                        .onErrorResume(error -> {
+                                                // A re-entry for a vehicle that still holds a CREATED/ACTIVE
+                                                // session trips the unique_active_session_per_vehicle
+                                                // constraint. Treat this as idempotent (already persisted)
+                                                // so the message is acknowledged instead of dead-lettered.
+                                                if (isUniqueViolation(error)) {
+                                                        LOGGER.info(
+                                                                        "POSTGRES session INSERT skipped | session={} vehicle={} already has an active session (unique constraint)",
+                                                                        session.sessionId(), session.vehicleId());
+                                                        return Mono.just(0);
+                                                }
+                                                return Mono.error(error);
+                                        })
                                         .doOnNext(rows -> LOGGER.info(
                                                         "POSTGRES session INSERT | session={} status={} version={} rowsAffected={}",
                                                         session.sessionId(), session.sessionStatus(),
@@ -102,7 +116,6 @@ public class ParkingLifecycleRepository {
                                                                         field("transaction_reference"),
                                                                         field("session_id"),
                                                                         field("user_id"),
-                                                                        field("method_id"),
                                                                         field("amount"),
                                                                         field("currency"),
                                                                         field("payment_status"),
@@ -116,7 +129,6 @@ public class ParkingLifecycleRepository {
                                                                         payment.transactionReference(),
                                                                         payment.sessionId(),
                                                                         payment.userId(),
-                                                                        payment.methodId(),
                                                                         payment.amount(),
                                                                         payment.currency(),
                                                                         payment.paymentStatus(),
@@ -188,9 +200,31 @@ public class ParkingLifecycleRepository {
                                                                                         "parking_slots update affected 0 rows for slot "
                                                                                                         + slot.slotId())));
 
-
                         return updateSession.flatMap(sessionRows -> updateSlot
                                         .map(slotRows -> new PersistResult(sessionRows, slotRows, 0)));
                 }));
+        }
+
+        private static boolean isUniqueViolation(Throwable error) {
+                Throwable current = error;
+                while (current != null) {
+                        if (current instanceof org.jooq.exception.DataAccessException dae
+                                        && dae.sqlStateClass() == org.jooq.exception.SQLStateClass.C23_INTEGRITY_CONSTRAINT_VIOLATION) {
+                                String sqlState = dae.sqlState();
+                                if ("23505".equals(sqlState)) {
+                                        return true;
+                                }
+                        }
+                        if (current.getClass().getName().startsWith("org.postgresql.util.PSQLException")
+                                        || current.getClass().getName()
+                                                        .startsWith("org.postgresql.util.ServerErrorMessage")) {
+                                String message = current.getMessage();
+                                if (message != null && message.contains("unique_active_session_per_vehicle")) {
+                                        return true;
+                                }
+                        }
+                        current = current.getCause();
+                }
+                return false;
         }
 }

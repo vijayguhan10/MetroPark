@@ -153,7 +153,7 @@ public class BillingWorker {
                 .flatMap(paymentId -> {
                     String txnRef = "TXN-" + sessionId + "-" + paymentId;
                     PaymentDto paymentDto = new PaymentDto(
-                            paymentId, txnRef, sessionId, userId, 1, amount, "INR", "SUCCESS",
+                            paymentId, txnRef, sessionId, userId, amount, "INR", "SUCCESS",
                             "200", "Payment successful", now, now, now);
 
                     return paymentRepository.create(paymentDto, paymentId)
@@ -190,7 +190,7 @@ public class BillingWorker {
                 .flatMap(paymentId -> {
                     String txnRef = "TXN-" + sessionId + "-" + paymentId;
                     PaymentDto paymentDto = new PaymentDto(
-                            paymentId, txnRef, sessionId, userId, 1, amount, "INR", "FAILED",
+                            paymentId, txnRef, sessionId, userId, amount, "INR", "FAILED",
                             "402", "Insufficient funds", now, now, now);
 
                     SuspensionDto suspensionDto = new SuspensionDto(

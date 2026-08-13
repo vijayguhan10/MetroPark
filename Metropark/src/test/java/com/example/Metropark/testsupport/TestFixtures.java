@@ -133,7 +133,6 @@ public final class TestFixtures {
                 "TX-100",
                 10,
                 "USR-1001",
-                1,
                 new BigDecimal("15.50"),
                 "USD",
                 "PENDING",

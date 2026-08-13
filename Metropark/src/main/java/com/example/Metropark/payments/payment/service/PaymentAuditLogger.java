@@ -13,11 +13,10 @@ public class PaymentAuditLogger {
 
     public void logPaymentCreated(PaymentDto payment, Integer rowsAffected) {
         LOGGER.info(
-                "Payment created: paymentId={}, transactionReference={}, sessionId={}, methodId={}, amount={}, currency={}, status={}, rowsAffected={}",
+                "Payment created: paymentId={}, transactionReference={}, sessionId={}, amount={}, currency={}, status={}, rowsAffected={}",
                 payment.paymentId(),
                 payment.transactionReference(),
                 payment.sessionId(),
-                payment.methodId(),
                 payment.amount(),
                 payment.currency(),
                 payment.paymentStatus(),
