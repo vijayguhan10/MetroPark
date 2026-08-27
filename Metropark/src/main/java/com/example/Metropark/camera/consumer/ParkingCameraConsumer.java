@@ -2,7 +2,6 @@ package com.example.Metropark.camera.consumer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import java.util.Random;
 
 import org.slf4j.Logger;
@@ -18,7 +17,6 @@ import com.example.Metropark.camera.event.CameraEventStatus;
 import com.example.Metropark.camera.repo.CameraEventRepository;
 import com.example.Metropark.config.RabbitMQConfig;
 import com.example.Metropark.parking.service.ParkingLifecycleService;
-import com.example.Metropark.payments.payment.repo.PaymentMethodRepository;
 import com.example.Metropark.redis.DistributedLockService;
 import com.example.Metropark.vehicle.repo.VehicleRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,7 +33,6 @@ public class ParkingCameraConsumer {
 
     private final ParkingLifecycleService parkingLifecycleService;
     private final VehicleRepository vehicleRepository;
-    private final PaymentMethodRepository paymentMethodRepository;
     private final DistributedLockService lockService;
     private final CameraEventRepository cameraEventRepository;
     private final ObjectMapper objectMapper;
@@ -45,14 +42,12 @@ public class ParkingCameraConsumer {
     public ParkingCameraConsumer(
             ParkingLifecycleService parkingLifecycleService,
             VehicleRepository vehicleRepository,
-            PaymentMethodRepository paymentMethodRepository,
             DistributedLockService lockService,
             CameraEventRepository cameraEventRepository,
             ObjectMapper objectMapper) {
 
         this.parkingLifecycleService = parkingLifecycleService;
         this.vehicleRepository = vehicleRepository;
-        this.paymentMethodRepository = paymentMethodRepository;
         this.lockService = lockService;
         this.cameraEventRepository = cameraEventRepository;
         this.objectMapper = objectMapper;
@@ -114,26 +109,14 @@ public class ParkingCameraConsumer {
     private Mono<Void> park(CameraEvent event, Integer vehicleId, String ownerUserId) {
         String userId = ownerUserId != null ? ownerUserId : event.userId();
 
-        return activePaymentMethodIds()
-                .flatMap(methodIds -> parkingLifecycleService.parkVehicleAtLot(
-                        userId,
-                        vehicleId,
-                        event.parkingLotId(),
-                        null,
-                        methodIds.get(random.nextInt(methodIds.size())),
-                        randomAmount(),
-                        CURRENCY))
+        return parkingLifecycleService.parkVehicleAtLot(
+                userId,
+                vehicleId,
+                event.parkingLotId(),
+                null,
+                randomAmount(),
+                CURRENCY)
                 .then();
-    }
-
-    private Mono<List<Integer>> activePaymentMethodIds() {
-        return paymentMethodRepository.findAll()
-                .filter(method -> Boolean.TRUE.equals(method.isActive()))
-                .map(method -> method.methodId().intValue())
-                .collectList()
-                .filter(ids -> !ids.isEmpty())
-                .switchIfEmpty(Mono.error(new IllegalStateException(
-                        "Cannot park: no active payment method exists.")));
     }
 
     private BigDecimal randomAmount() {

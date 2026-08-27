@@ -34,7 +34,6 @@ import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.parking.service.ParkingLifecycleService;
 import com.example.Metropark.parking.service.ParkingSessionService;
 import com.example.Metropark.parking.service.ParkingSlotService;
-import com.example.Metropark.payments.payment.repo.PaymentMethodRepository;
 import com.example.Metropark.reservation.service.ReservationClassService;
 import com.example.Metropark.user.dto.UserDto;
 import com.example.Metropark.user.repo.UserRepository;
@@ -78,7 +77,6 @@ public class SimulationService {
         private final ParkingSlotService parkingSlotService;
         private final ParkingSessionService parkingSessionService;
         private final CameraEventPublisher cameraEventPublisher;
-        private final PaymentMethodRepository paymentMethodRepository;
         private final ParkingSlotRepository parkingSlotRepository;
         private final GateRepository gateRepository;
         private final LocationRepository locationRepository;
@@ -112,7 +110,6 @@ public class SimulationService {
         private volatile List<UserDto> cachedUsers = List.of();
         private volatile List<Integer> cachedGateIds = List.of();
         private volatile List<Integer> cachedVehicleTypeIds = List.of();
-        private volatile List<Integer> cachedPaymentMethodIds = List.of();
         private volatile SimulationRunContext currentSimulationContext;
 
         private volatile Disposable entryLoop;
@@ -123,7 +120,6 @@ public class SimulationService {
                         ParkingSlotService parkingSlotService,
                         ParkingSessionService parkingSessionService,
                         CameraEventPublisher cameraEventPublisher,
-                        PaymentMethodRepository paymentMethodRepository,
                         ParkingSlotRepository parkingSlotRepository,
                         GateRepository gateRepository,
                         LocationRepository locationRepository,
@@ -135,7 +131,6 @@ public class SimulationService {
                 this.parkingSlotService = parkingSlotService;
                 this.parkingSessionService = parkingSessionService;
                 this.cameraEventPublisher = cameraEventPublisher;
-                this.paymentMethodRepository = paymentMethodRepository;
                 this.parkingSlotRepository = parkingSlotRepository;
                 this.gateRepository = gateRepository;
                 this.locationRepository = locationRepository;
@@ -250,7 +245,7 @@ public class SimulationService {
                         return Mono.empty();
                 }
 
-                if (cachedUsers.isEmpty() || slotStatus.isEmpty() || cachedPaymentMethodIds.isEmpty()) {
+                if (cachedUsers.isEmpty() || slotStatus.isEmpty()) {
                         return reinitializeQuietly(context);
                 }
 
@@ -540,9 +535,6 @@ public class SimulationService {
                                 locationRepository.findAll().collectList(),
                                 userRepository.findAll().collectList(),
                                 gateRepository.findAll().collectList(),
-                                paymentMethodRepository.findAll()
-                                                .filter(method -> Boolean.TRUE.equals(method.isActive()))
-                                                .collectList(),
                                 vehicleTypeService.getAllVehicleTypes().collectList(),
                                 reservationClassService.getAllReservationClasses().collectList(),
                                 parkingSessionService.getAllSessionsFromDb().collectList())
@@ -553,24 +545,20 @@ public class SimulationService {
                                                         .map(gate -> gate.gateId())
                                                         .filter(Objects::nonNull)
                                                         .toList();
-                                        cachedPaymentMethodIds = loaded.getT4().stream()
-                                                        .map(method -> method.methodId().intValue())
-                                                        .toList();
-                                        cachedVehicleTypeIds = loaded.getT5().stream()
+                                        cachedVehicleTypeIds = loaded.getT4().stream()
                                                         .map(type -> type.vehicleTypeId())
                                                         .filter(Objects::nonNull)
                                                         .toList();
-                                        List<Integer> reservationClassIds = loaded.getT6().stream()
+                                        List<Integer> reservationClassIds = loaded.getT5().stream()
                                                         .map(reservationClass -> reservationClass.classId())
                                                         .filter(Objects::nonNull)
                                                         .toList();
 
-                                        return adoptExistingSessions(loaded.getT7())
+                                        return adoptExistingSessions(loaded.getT6())
                                                         .doOnSuccess(ignored -> LOGGER.info(
-                                                                        "Loaded {} locations, {} users, {} gates, {} payment methods, {} adopted sessions",
+                                                                        "Loaded {} locations, {} users, {} gates, {} adopted sessions",
                                                                         cachedLocations.size(), cachedUsers.size(),
                                                                         cachedGateIds.size(),
-                                                                        cachedPaymentMethodIds.size(),
                                                                         vehiclesInside.size()))
                                                         .then(ensureSlots(context, reservationClassIds));
                                 })

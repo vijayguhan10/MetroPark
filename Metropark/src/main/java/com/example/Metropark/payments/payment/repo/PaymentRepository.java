@@ -39,7 +39,7 @@ public class PaymentRepository {
                                         .columns(
                                                         field("payment_id"), field("transaction_reference"),
                                                         field("session_id"), field("user_id"),
-                                                        field("method_id"), field("amount"), field("currency"),
+                                                        field("amount"), field("currency"),
                                                         field("payment_status"),
                                                         field("gateway_response_code"),
                                                         field("gateway_response_message"), field("processed_at"),
@@ -47,7 +47,7 @@ public class PaymentRepository {
                                         .values(
                                                         explicitId, dto.transactionReference(), dto.sessionId(),
                                                         dto.userId(),
-                                                        dto.methodId(), dto.amount(), dto.currency(),
+                                                        dto.amount(), dto.currency(),
                                                         dto.paymentStatus(),
                                                         dto.gatewayResponseCode(), dto.gatewayResponseMessage(),
                                                         dto.processedAt(),
@@ -59,14 +59,14 @@ public class PaymentRepository {
                 return Mono.from(dsl.insertInto(table("payments"))
                                 .columns(
                                                 field("transaction_reference"), field("session_id"), field("user_id"),
-                                                field("method_id"), field("amount"), field("currency"),
+                                                field("amount"), field("currency"),
                                                 field("payment_status"),
                                                 field("gateway_response_code"), field("gateway_response_message"),
                                                 field("processed_at"),
                                                 field("created_at"), field("updated_at"))
                                 .values(
                                                 dto.transactionReference(), dto.sessionId(), dto.userId(),
-                                                dto.methodId(), dto.amount(), dto.currency(), dto.paymentStatus(),
+                                                dto.amount(), dto.currency(), dto.paymentStatus(),
                                                 dto.gatewayResponseCode(), dto.gatewayResponseMessage(),
                                                 dto.processedAt(),
                                                 dto.createdAt(), dto.updatedAt())
@@ -170,7 +170,6 @@ public class PaymentRepository {
                                 record.get("transaction_reference", String.class),
                                 record.get("session_id", Integer.class),
                                 record.get("user_id", String.class),
-                                record.get("method_id", Integer.class),
                                 record.get("amount", BigDecimal.class),
                                 record.get("currency", String.class),
                                 record.get("payment_status", String.class),

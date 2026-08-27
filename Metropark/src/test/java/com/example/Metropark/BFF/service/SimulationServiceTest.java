@@ -1,21 +1,20 @@
 package com.example.Metropark.BFF.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.example.Metropark.BFF.dto.SimulationRunResponseDto;
 import com.example.Metropark.camera.event.CameraEvent;
@@ -29,8 +28,6 @@ import com.example.Metropark.parking.dto.ParkingSlotDto;
 import com.example.Metropark.parking.repo.ParkingSlotRepository;
 import com.example.Metropark.parking.service.ParkingSessionService;
 import com.example.Metropark.parking.service.ParkingSlotService;
-import com.example.Metropark.payments.payment.dto.PaymentMethodDto;
-import com.example.Metropark.payments.payment.repo.PaymentMethodRepository;
 import com.example.Metropark.reservation.dto.ReservationClassDto;
 import com.example.Metropark.reservation.service.ReservationClassService;
 import com.example.Metropark.user.dto.UserDto;
@@ -51,7 +48,6 @@ class SimulationServiceTest {
         private ParkingSlotService parkingSlotService;
         private ParkingSessionService parkingSessionService;
         private CameraEventPublisher cameraEventPublisher;
-        private PaymentMethodRepository paymentMethodRepository;
         private ParkingSlotRepository parkingSlotRepository;
         private GateRepository gateRepository;
         private LocationRepository locationRepository;
@@ -70,7 +66,6 @@ class SimulationServiceTest {
                 parkingSlotService = mock(ParkingSlotService.class);
                 parkingSessionService = mock(ParkingSessionService.class);
                 cameraEventPublisher = mock(CameraEventPublisher.class);
-                paymentMethodRepository = mock(PaymentMethodRepository.class);
                 parkingSlotRepository = mock(ParkingSlotRepository.class);
                 gateRepository = mock(GateRepository.class);
                 locationRepository = mock(LocationRepository.class);
@@ -83,7 +78,6 @@ class SimulationServiceTest {
                                 parkingSlotService,
                                 parkingSessionService,
                                 cameraEventPublisher,
-                                paymentMethodRepository,
                                 parkingSlotRepository,
                                 gateRepository,
                                 locationRepository,
@@ -102,8 +96,6 @@ class SimulationServiceTest {
                                 .thenReturn(Flux.just(new LocationDto("LOC-001", 1, "Central", "Chennai", "ACTIVE")));
                 when(gateRepository.findAll()).thenReturn(Flux.just(
                                 new GateDto(1, "LOC-001", "Gate 1", "ENTRY", "ACTIVE", null, null)));
-                when(paymentMethodRepository.findAll()).thenReturn(Flux.just(
-                                new PaymentMethodDto(1L, "UPI", true, null)));
                 when(vehicleTypeService.getAllVehicleTypes()).thenReturn(Flux.just(
                                 new VehicleTypeDto(1, "Car")));
                 when(reservationClassService.getAllReservationClasses()).thenReturn(Flux.just(

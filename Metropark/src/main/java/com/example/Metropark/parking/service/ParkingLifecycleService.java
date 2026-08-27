@@ -87,7 +87,6 @@ public class ParkingLifecycleService {
                         Integer vehicleId,
                         Integer slotId,
                         Integer entryGateId,
-                        Integer methodId,
                         BigDecimal amount,
                         String currency) {
 
@@ -148,7 +147,6 @@ public class ParkingLifecycleService {
                                                                                                                 + paymentId,
                                                                                                 sessionId,
                                                                                                 userId,
-                                                                                                methodId,
                                                                                                 amount,
                                                                                                 currency,
                                                                                                 PAYMENT_PENDING,
@@ -197,7 +195,6 @@ public class ParkingLifecycleService {
                         Integer vehicleId,
                         String parkingLotId,
                         Integer entryGateId,
-                        Integer methodId,
                         BigDecimal amount,
                         String currency) {
 
@@ -206,7 +203,7 @@ public class ParkingLifecycleService {
                                                 "Cannot park vehicle " + vehicleId + ": no free slot at lot "
                                                                 + parkingLotId)))
                                 .flatMap(claim -> parkVehicle(
-                                                userId, vehicleId, claim.slotId(), entryGateId, methodId, amount,
+                                                userId, vehicleId, claim.slotId(), entryGateId, amount,
                                                 currency)
                                                 .doFinally(signal -> lockService.release(claim.lock()).subscribe()));
         }
@@ -341,7 +338,6 @@ public class ParkingLifecycleService {
                                                                 dto.transactionReference(),
                                                                 dto.sessionId(),
                                                                 dto.userId(),
-                                                                dto.methodId(),
                                                                 dto.amount(),
                                                                 dto.currency(),
                                                                 dto.paymentStatus(),
